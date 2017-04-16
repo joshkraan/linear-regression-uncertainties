@@ -1,6 +1,7 @@
 
 
 library(shiny)
+library(colourpicker)
 
 shinyUI(fluidPage(
   
@@ -32,6 +33,17 @@ shinyUI(fluidPage(
           tags$hr(),
           #TODO: Figure out a max for Number Input
           numericInput("setNumber", "Generated Sets", min = 100, value = 100),
+          tags$hr(),
+          checkboxInput("showSpread", "Show Spread", value = FALSE),
+          conditionalPanel(
+            condition = "input.showSpread == true",
+            colourInput("spreadColor", "Spread Color", value = "grey")
+          ),
+          checkboxInput("showGenerated", "Show Generated Data", value = FALSE),
+          conditionalPanel(
+            condition = "input.showGenerated == true",
+            colourInput("dataColor", "Generated Data Color", value = "red")
+          ),
           tags$hr(),
           actionButton("plotData", "Calculate Fit", width = '100%')
         )

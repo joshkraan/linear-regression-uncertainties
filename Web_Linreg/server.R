@@ -1,6 +1,11 @@
 
 
 library(shiny)
+library(ggplot2)
+library(ggthemes)
+library(scales)
+library(reshape2)
+library(nlme)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
@@ -30,8 +35,8 @@ shinyServer(function(input, output) {
           return(melteddata)
         }
         
-        xdata = normaldistribution(100, data[,1], data[,2])
-        ydata = normaldistribution(100, data[,3], data[,4]) # How many of these for good accuracy?
+        xdata = normaldistribution(input$setNumber, data[,1], data[,2])
+        ydata = normaldistribution(input$setNumber, data[,3], data[,4]) # How many of these for good accuracy?
         
         yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
         xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
@@ -68,8 +73,10 @@ shinyServer(function(input, output) {
           geom_abline(intercept = bestlineintercept, slope = bestlineslope) +
           geom_abline(intercept = highintercept, slope = lowslope) + 
           geom_abline(intercept = lowintercept, slope = highslope) + 
-          geom_point(aes(xdata[,2], ydata[,2]), color = "red", alpha = 1/20) +
-          geom_abline(intercept = regressions[,1], slope = regressions[,2], alpha = 1/10, color = "grey")
+          geom_point(aes(xdata[,2], ydata[,2]), color = input$dataColor, alpha = 1/20) +
+          geom_abline(intercept = regressions[,1], slope = regressions[,2], alpha = 1/10, color = input$spreadColor)
+        
+        
         
         #TODO: Add option to disable/enable floating label
         #Position label within graph bounds
