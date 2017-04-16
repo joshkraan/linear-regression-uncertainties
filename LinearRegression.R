@@ -39,6 +39,8 @@ regressions = coef(lmList(yValue ~ xValue | Index, data = mergeddata, pool = FAL
 #Possibly weight by uncertainty?
 #See: https://stackoverflow.com/questions/14636052/using-smooth-in-ggplot2-to-fit-a-linear-model-using-the-errors-given-in-the-data
 
+#Should sd or se be used?
+
 
 bestlineslope = mean(regressions[,2])
 bestlineintercept = mean(regressions[,1])
@@ -64,13 +66,17 @@ plot1 =
   geom_point(aes(xdata[,2], ydata[,2]), color = "red", alpha = 1/20) +
   geom_abline(intercept = regressions[,1], slope = regressions[,2], alpha = 1/10, color = "grey")
 
+equationLabel = paste("Slope:\n", bestlineslope, "\u00B1", slopeUncertainty, "\nIntercept:\n", bestlineintercept, "\u00B1", interceptUncertainty)
+
 #Theming of the plot
 plot1 = 
   plot1 + 
-  theme_tufte() + 
-  geom_rangeframe() + 
-  scale_x_continuous(breaks = extended_range_breaks()(data[,1])) + 
-  scale_y_continuous(breaks = extended_range_breaks()(data[,3])) 
+  theme_bw() +
+  geom_label(aes(600, 8000, label = equationLabel, hjust = "left"), label.r = unit(0, "lines"))
+  #theme_tufte() + 
+  #geom_rangeframe() + 
+  #scale_x_continuous(breaks = extended_range_breaks()(data[,1])) + 
+  #scale_y_continuous(breaks = extended_range_breaks()(data[,3])) 
 
 
 # TODO: Fix the graph labeling and make it look better, look into ggtheme on github
@@ -80,5 +86,7 @@ cat("Slope: ", bestlineslope, "Slope Uncertainty: ", slopeUncertainty,
     "\nIntercept: ", bestlineintercept, "Intercept Uncertainty: ", interceptUncertainty)
 
 #TODO: Fix errors with inconsistency in produced values.
+
+#plot(density[,2])
 
 print(plot1)
