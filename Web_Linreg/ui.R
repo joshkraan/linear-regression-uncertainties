@@ -28,12 +28,20 @@ shinyUI(fluidPage(
         ),
         
         wellPanel(
-          #This is the graph options panel. 
-          h4("Graph Options", align = "center"),
+          #This is the regression options panel
+          h4("Regression Options", align = "center"),
           tags$hr(),
           #TODO: Figure out a max for Number Input
           numericInput("setNumber", "Generated Sets", min = 100, value = 100),
           tags$hr(),
+          actionButton("calculateFit", "Calculate Fit", width = '100%')
+        ),
+        
+        wellPanel(
+          #This is the graph options panel. 
+          h4("Graph Options", align = "center"),
+          tags$hr(),
+          checkboxInput("showMaxMin", "Show Max/Min Lines", value = FALSE),
           checkboxInput("showSpread", "Show Spread", value = FALSE),
           conditionalPanel(
             condition = "input.showSpread == true",
@@ -44,14 +52,29 @@ shinyUI(fluidPage(
             condition = "input.showGenerated == true",
             colourInput("dataColor", "Generated Data Color", value = "red")
           ),
-          tags$hr(),
-          actionButton("plotData", "Calculate Fit", width = '100%')
+          checkboxInput("showEquationFloat", "Show Equation On Graph", value = FALSE),
+          conditionalPanel(
+            condition = "input.showEquationFloat == true",
+            sliderInput("equationVertical", "Vertical Distance", min = 0, max = 100, value = 0, post = "%")
+          ),
+          conditionalPanel(
+            condition = "input.showEquationFloat == true",
+            sliderInput("equationHorizontal", "Horizontal Distance", min = 0, max = 100, value = 0, post = "%")
+          )
         )
     ),
     
     # Show a plot of the generated distribution
     column(9,
-      tabsetPanel(tabPanel("Plot", plotOutput("scatterPlot")),
+      tabsetPanel(tabPanel("Plot", 
+                           {
+                             if(is.null(plotOutput("scatterPlot"))){
+                               h4("test")
+                             } else {
+                               plotOutput("scatterPlot")
+                               #h4("test", align = "center")
+                             }
+                           }),
                   tabPanel("Table", tableOutput("dataTable")))
     )
   )

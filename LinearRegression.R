@@ -56,6 +56,7 @@ lowintercept = mean(regressions[,1]) - interceptUncertainty
 
 
 #Plot original data and error bars, generated data, and best fit line with uncertainty
+#TODO: Figure out error bar width and height relative to graph size
 plot1 = 
   qplot(data[,1], data[,3]) + 
   geom_errorbar(yerrors, width = 0.2)  + 
