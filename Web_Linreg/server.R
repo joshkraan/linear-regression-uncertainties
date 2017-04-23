@@ -6,14 +6,8 @@ library(reshape2)
 library(nlme)
 library(dplyr)
 library(Cairo)
+library(latex2exp)
 options(shiny.usecairo=T)
-
-#TODO: Seperate graph and regression calculations
-#TODO: Use ggsave()
-#TODO: Add density plots
-#TODO: Add option to disable/enable floating label
-#Position label within graph bounds
-#TODO: Add dropdown with selectable theme.
 
 shinyServer(function(input, output) {
   
@@ -98,7 +92,7 @@ shinyServer(function(input, output) {
     lowslope = bestlineslope - slopeUncertainty
     lowintercept = bestlineintercept - interceptUncertainty
     
-    output$scatterPlot = renderPlot({
+    output$scatterPlot = renderPlot(height = 600, res = input$setPPI, {
       
       inputFile = input$csvFile
       
@@ -112,7 +106,11 @@ shinyServer(function(input, output) {
         qplot(data[,1], data[,3]) + 
         geom_errorbar(yerrors, width = 0.2)  + 
         geom_errorbarh(xerrors, height = 0.3) + 
-        geom_abline(intercept = bestlineintercept, slope = bestlineslope)
+        geom_abline(intercept = bestlineintercept, slope = bestlineslope) +
+        theme_bw() +
+        theme(aspect.ratio = input$aspectRatio) +
+        xlab(TeX(input$xLabel)) +
+        ylab(TeX(input$yLabel))
       
       xrange = layer_scales(plot1)$x$range$range[2] - layer_scales(plot1)$x$range$range[1]
       yrange = layer_scales(plot1)$y$range$range[2] - layer_scales(plot1)$y$range$range[1]
@@ -147,10 +145,6 @@ shinyServer(function(input, output) {
           plot1 +
           annotate("text", xoffset, yoffset, label = equationLabel)
       }
-      
-      plot1 = 
-        plot1 + 
-        theme_bw()
       
       plot1
       
