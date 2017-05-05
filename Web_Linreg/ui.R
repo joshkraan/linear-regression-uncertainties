@@ -26,6 +26,7 @@ sidebar = dashboardSidebar(
 )
 
 body = dashboardBody(
+  shinyjs::useShinyjs(),
   tabItems(
     tabItem(tabName = "graph", {
       fluidRow(
@@ -50,19 +51,19 @@ body = dashboardBody(
                                     "backslash two should be used for commands. See the latex2exp documentation for more information."),
                    placement = "left"),
           splitLayout(
-            numericInput('xMin', 'X Min', 50),
-            numericInput('xMax', 'X Max', 200)
+            numericInput('xMin', 'X Min', ''),
+            numericInput('xMax', 'X Max', '')
           ),
           splitLayout(
-            numericInput('yMin', 'Y Min', 50),
-            numericInput('yMax', 'Y Max', 200)
+            numericInput('yMin', 'Y Min', ''),
+            numericInput('yMax', 'Y Max', '')
           ),
           tags$hr(),
           selectInput("aspectRatio", "Aspect Ratio", 
                       c("16:9" = 9/16, "4:3" = 3/4, "1:1" = 1)),
-          selectInput("graphResolution", "Resolution", 
-                      c("1080p", "720p", "480p")),
           numericInput("setPPI", "PPI", value = 100, min = 50, max = 250),
+          selectInput("selectTheme", "Theme", 
+                      c("Black & White" = "theme_bw()", "Grey" = "theme_grey()", "Base" = "theme_base()", "Google Docs" = "theme_gdocs()", "LibreOffice" = "theme_calc()")),
           tags$hr(),
           checkboxInput("showMaxMin", "Show Max/Min Lines", value = FALSE),
           checkboxInput("showSpread", "Show Spread", value = FALSE),
@@ -85,9 +86,12 @@ body = dashboardBody(
             sliderInput("equationHorizontal", "Horizontal Distance", min = 0, max = 100, value = 0, post = "%")
           ),
           tags$hr(),
+          selectInput("downloadResolution", "Download Resolution", 
+                      c("1080p", "720p", "480p")),
           selectInput("fileFormat", "Download File Format", 
-                      c("PDF", "SVG", "PNG")),
-          actionButton("downloadPlot", "Download", width = '100%')
+                      c("PDF" = "pdf", "SVG" = "svg", "PNG" = "png")),
+          downloadButton("downloadPlot", "Download"),
+          tags$style(type='text/css', '#downloadPlot { width:100%; align: center')
         )
       )
     }),
@@ -100,80 +104,3 @@ dashboardPage(
   sidebar,
   body
 )
-
-# shinyUI(fluidPage(
-#   
-#   # Application title
-#   titlePanel("Linear Regression With Uncertainties"),
-#   
-#   fluidRow(
-#     # Sidebar with file input options.
-#     column(3,
-#         wellPanel(
-#           #This is the file options panel.
-#           h4("File Options", align = "center"),
-#           tags$hr(),
-          # fileInput("csvFile", "Select a CSV file to graph",
-          #           accept = c(
-          #               'text/csv',
-          #               'text/comma-separated-values',
-          #               '.csv'
-          #           )
-          # ),
-          # # Add a horizontal line
-          # tags$hr(),
-          # checkboxInput('header', 'Header', FALSE)
-#         ),
-#         
-#         wellPanel(
-#           #This is the regression options panel
-#           h4("Regression Options", align = "center"),
-          # tags$hr(),
-          # #TODO: Figure out a max for Number Input
-          # numericInput("setNumber", "Generated Sets", min = 100, value = 100),
-          # tags$hr(),
-          # actionButton("calculateFit", "Calculate Fit", width = '100%')
-#         ),
-#         
-#         wellPanel(
-#           #This is the graph options panel. 
-#           h4("Graph Options", align = "center"),
-#           tags$hr(),
-          # checkboxInput("showMaxMin", "Show Max/Min Lines", value = FALSE),
-          # checkboxInput("showSpread", "Show Spread", value = FALSE),
-          # conditionalPanel(
-          #   condition = "input.showSpread == true",
-          #   colourInput("spreadColor", "Spread Color", value = "grey")
-          # ),
-          # checkboxInput("showGenerated", "Show Generated Data", value = FALSE),
-          # conditionalPanel(
-          #   condition = "input.showGenerated == true",
-          #   colourInput("dataColor", "Generated Data Color", value = "red")
-          # ),
-          # checkboxInput("showEquationFloat", "Show Equation On Graph", value = FALSE),
-          # conditionalPanel(
-          #   condition = "input.showEquationFloat == true",
-          #   sliderInput("equationVertical", "Vertical Distance", min = 0, max = 100, value = 0, post = "%")
-          # ),
-          # conditionalPanel(
-          #   condition = "input.showEquationFloat == true",
-          #   sliderInput("equationHorizontal", "Horizontal Distance", min = 0, max = 100, value = 0, post = "%")
-          # )
-#         )
-#     ),
-#     
-#     # Show a plot of the generated distribution
-#     column(9,
-#       tabsetPanel(tabPanel("Plot", 
-#                            {
-#                              if(is.null(plotOutput("scatterPlot"))){
-#                                h4("test")
-#                              } else {
-#                                plotOutput("scatterPlot")
-#                                #h4("test", align = "center")
-#                              }
-#                            }),
-#                   tabPanel("Table", tableOutput("dataTable")))
-#     )
-#   )
-# ))

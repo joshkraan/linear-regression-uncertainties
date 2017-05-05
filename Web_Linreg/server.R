@@ -7,9 +7,15 @@ library(nlme)
 library(dplyr)
 library(Cairo)
 library(latex2exp)
+library(stringr)
+library(shinyjs)
 options(shiny.usecairo=T)
 
-shinyServer(function(input, output) {
+#TODO: Take maximum of found uncertainty vs uncertainty in fit of original data
+
+shinyServer(function(input, output, session) {
+  
+  shinyjs::disable("downloadPlot")
   
   output$dataTable = renderTable({
     inputFile = input$csvFile
@@ -102,18 +108,49 @@ shinyServer(function(input, output) {
       
       data = read.csv(inputFile$datapath, header = input$header)
       
-      plot1 = 
-        qplot(data[,1], data[,3]) + 
-        geom_errorbar(yerrors, width = 0.2)  + 
-        geom_errorbarh(xerrors, height = 0.3) + 
-        geom_abline(intercept = bestlineintercept, slope = bestlineslope) +
-        theme_bw() +
-        theme(aspect.ratio = input$aspectRatio) +
-        xlab(TeX(input$xLabel)) +
-        ylab(TeX(input$yLabel))
+      #A plot used to calculte limits that actually isn't shown
+      #The error bars have 0 width/height because they won't be seen but need to be used to calculate limits
+      plotframe = 
+        qplot(data[,1], data[,3]) +
+        geom_errorbar(yerrors, width = 0)  + 
+        geom_errorbarh(xerrors, height = 0)
       
-      xrange = layer_scales(plot1)$x$range$range[2] - layer_scales(plot1)$x$range$range[1]
-      yrange = layer_scales(plot1)$y$range$range[2] - layer_scales(plot1)$y$range$range[1]
+      maxydata = layer_scales(plotframe)$y$range$range[2]
+      maxxdata = layer_scales(plotframe)$x$range$range[2]
+      minydata = layer_scales(plotframe)$y$range$range[1]
+      minxdata = layer_scales(plotframe)$x$range$range[1]
+      
+      xrange = maxxdata - minxdata
+      yrange = maxydata - minydata
+      
+      #TODO possibly change constant depending upon aspect ratio so one isn't larger, do this for error bars too
+      ybuffer = 0.05*yrange
+      xbuffer = 0.05*xrange
+      
+      if(is.na(input$xMin)|is.na(input$yMin)|is.na(input$xMax)|is.na(input$yMax)) {
+        updateTextInput(session, "xMin", value = minxdata - xbuffer)
+        updateTextInput(session, "xMax", value = maxxdata + xbuffer)
+        updateTextInput(session, "yMin", value = minydata - ybuffer)
+        updateTextInput(session, "yMax", value = maxydata + ybuffer)
+      }
+      
+      #TODO: Figure out issues with selecting two different CSV in a row
+      
+      if(!is.na(input$xMin) & !is.na(input$yMin) & !is.na(input$xMax) & !is.na(input$yMax)) {
+        plot1 = 
+          qplot(data[,1], data[,3]) + 
+          geom_errorbar(yerrors, width = 0.02*(xrange))  + 
+          geom_errorbarh(xerrors, height = 0.02*(yrange)) + 
+          geom_abline(intercept = bestlineintercept, slope = bestlineslope) +
+          eval(parse(text = input$selectTheme)) +
+          theme(aspect.ratio = input$aspectRatio, plot.background=element_blank()) +
+          xlab(TeX(input$xLabel)) +
+          ylab(TeX(input$yLabel)) +
+          xlim(input$xMin, input$xMax) +
+          ylim(input$yMin, input$yMax)
+      } else {
+        return(NULL)
+      }
       
       equationLabel = paste("Slope:\n", bestlineslope, "\u00B1", slopeUncertainty, "\nIntercept:\n", bestlineintercept,
                             "\u00B1", interceptUncertainty)
@@ -133,10 +170,11 @@ shinyServer(function(input, output) {
       if(input$showMaxMin == TRUE){
         plot1 = 
           plot1 +
-          geom_abline(intercept = highintercept, slope = lowslope) + 
-          geom_abline(intercept = lowintercept, slope = highslope)
+          geom_abline(intercept = highintercept, slope = lowslope, linetype = 3) + 
+          geom_abline(intercept = lowintercept, slope = highslope, linetype = 3)
       }
       
+      #TODO fix equation
       if(input$showEquationFloat == TRUE){
         xoffset = (input$equationHorizontal/100)*xrange
         yoffset = (input$equationVertical/100)*yrange
@@ -146,7 +184,26 @@ shinyServer(function(input, output) {
           annotate("text", xoffset, yoffset, label = equationLabel)
       }
       
-      plot1
+      # if(is.null(inputFile)) {
+      #   shinyjs::disable("downloadPlot")
+      # } else {
+      #   shinyjs::enable("downloadPlot")
+      # }
+      
+      observe({
+        if(!is.null(inputFile)) {
+          shinyjs::enable("downloadPlot")
+        }
+      })
+      
+      output$downloadPlot = downloadHandler(
+        filename = function() {paste0(str_replace(input$csvFile, ".csv", ""), '.', input$fileFormat)},
+        content = function(file) {
+          ggsave(file, plot = plot1, device = input$fileFormat)
+        }
+      )
+      
+      return(plot1)
       
     })
 
