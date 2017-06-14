@@ -6,17 +6,18 @@ library(latex2exp)
 
 sidebar = dashboardSidebar(
   sidebarMenu(id = "menu",
-    menuItem("Graph", tabName = "graph", icon = icon("line-chart")),
-    menuItem("Table", tabName = "table", icon = icon("table"))
+              menuItem("Data", tabName = "table", icon = icon("table")),
+              menuItem("Graph", tabName = "graph", icon = icon("line-chart"))
   ),
-  div(style = "height: 75px", fileInput("csvFile", "Upload a CSV file to graph",
-            accept = c(
-              'text/csv',
-              'text/comma-separated-values',
-              '.csv'
-            )
-  )),
-  checkboxInput('header', 'Header', FALSE),
+  # div(style = "height: 75px", fileInput("csvFile", "Upload a CSV file to graph",
+  #           accept = c(
+  #             'text/csv',
+  #             'text/comma-separated-values',
+  #             '.csv'
+  #           )
+  # )),
+  # checkboxInput('header', 'Header', FALSE),
+  
   bsTooltip(id = 'header', title = 'Select this if the CSV file provided has a header row.', placement = 'right'),
   numericInput("setNumber", "Number of Generated Sets", min = 100, max = 100000, value = 100),
   bsTooltip(id = 'setNumber', title = 
@@ -28,30 +29,41 @@ sidebar = dashboardSidebar(
 body = dashboardBody(
   shinyjs::useShinyjs(),
   tabItems(
+    tabItem(tabName = "table", {
+      fluidRow(
+        box(width = "9", dataTableOutput("dataTable")),
+        box(width = "3",
+            fileInput("csvFile", "Upload a CSV file to graph", accept = c('text/csv', 'text/comma-separated-values', '.csv')),
+            checkboxInput('header', 'Header Row', FALSE),
+            div(style = "text-align: center", actionButton("graphData", "Graph Data", width = '100%')),
+            bsAlert("alert")
+            )
+      )
+    }),
     tabItem(tabName = "graph", {
       fluidRow(
-        box(width = "9", plotOutput("scatterPlot", height = "auto")),
+        box(width = "9", plotOutput("scatterPlot", height = "auto", click = "plot_click")),
         box(width = "3",
-          #h5(tags$b("Aspect Ratio")),
-          # splitLayout(cellWidths = c("65px", "10px", "80px"), 
-          #   div(style = "height: 30px", numericInput("setAspectRatio1", "", value = 1, width = '60px', min = 1, max = 99)),
-          #   h3(":"),
-          #   numericInput("setAspectRatio2", "", value = 1, width = '60px', min = 1, max = 99)
-          # ),
+          textInput("graphTitle", "Title", value = NULL),
+          bsPopover(id = "graphTitle", title = "Using LaTeX", 
+                    content = paste0("The graph labels are processed using the R package latex2exp. ", 
+                                     "This means that many regular LaTeX math formulas can be used. Rather than one ", 
+                                     "backslash two should be used for commands. See the latex2exp documentation for more information."),
+                    placement = "left"),
           textInput("xLabel", "X Axis Label", value = "X"),
           bsPopover(id = "xLabel", title = "Using LaTeX", 
-                    content = paste0("The X and Y axis labels are processed using the R package latex2exp. ", 
+                    content = paste0("The graph labels are processed using the R package latex2exp. ", 
                                      "This means that many regular LaTeX math formulas can be used. Rather than one ", 
                                      "backslash two should be used for commands. See the latex2exp documentation for more information."),
                     placement = "left"),
           textInput("yLabel", "Y Axis Label", value = "Y"),
           bsPopover(id = "yLabel", title = "Using LaTeX", 
-                   content = paste0("The X and Y axis labels are processed using the R package latex2exp. ", 
+                   content = paste0("The graph axis labels are processed using the R package latex2exp. ", 
                                     "This means that many regular LaTeX math formulas can be used. Rather than one ", 
                                     "backslash two should be used for commands. See the latex2exp documentation for more information."),
                    placement = "left"),
           splitLayout(
-            numericInput('xMin', 'X Min', ''),
+            numericInput('xMin', 'X Min', ''), #TODO: Fix issues with steps and invalid value error message on mouseover
             numericInput('xMax', 'X Max', '')
           ),
           splitLayout(
@@ -94,8 +106,7 @@ body = dashboardBody(
           tags$style(type='text/css', '#downloadPlot { width:100%; align: center')
         )
       )
-    }),
-    tabItem(tabName = "table", tableOutput("dataTable"))
+    })
   )
 )
 

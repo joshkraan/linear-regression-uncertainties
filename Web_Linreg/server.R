@@ -10,25 +10,44 @@ library(latex2exp)
 library(stringr)
 library(shinyjs)
 options(shiny.usecairo=T)
+library(DT)
+library(tidyverse)
 
 #TODO: Take maximum of found uncertainty vs uncertainty in fit of original data
 
 shinyServer(function(input, output, session) {
   
+  #Disable the download button until sufficient options are set.
   shinyjs::disable("downloadPlot")
   
-  output$dataTable = renderTable({
+  #Read the uploaded data file and produce a visual data table.
+  output$dataTable = DT::renderDataTable(options = list(columnDefs = list(list(className = 'dt-left', targets = "_all"))), {
     inputFile = input$csvFile
     
-    if (is.null(inputFile))
-      return(NULL)
+    if (is.null(inputFile)) {
+      return(data.frame(X = numeric(0), Y = numeric(0)))
+    }
     
-    #Read uploaded data file. Uses header if option is selected in UI.
     data = read.csv(inputFile$datapath, header = input$header)
     
-    names(data) = c('X Value', 'X Uncertainty', 'Y Value', 'Y Uncertainty')
+    names(data) = c('XValue', 'XUncertainty', 'YValue', 'YUncertainty')
+    
+    #TODO: clean up the following
+    
+    data = data %>% unite(X, XValue, XUncertainty, sep = "\u00B1", remove = TRUE)
+    data = data %>% unite(Y, YValue, YUncertainty, sep = "\u00B1", remove = TRUE)
     
     data
+  })
+  
+  #Switch to graph tab once button in data tab is pressed.
+  observeEvent(input$graphData, {
+    if(is.null(input$csvFile)){
+      #TODO: Dismiss this warning after some time.
+      createAlert(session, "alert", title = "Error", content = "Please input data before proceeding.", append = FALSE, style = "danger")
+      return(NULL)
+    }
+    updateTabItems(session, "menu", "graph")
   })
       
   observeEvent(input$calculateFit, {
@@ -98,6 +117,16 @@ shinyServer(function(input, output, session) {
     lowslope = bestlineslope - slopeUncertainty
     lowintercept = bestlineintercept - interceptUncertainty
     
+    # plotclick = NULL
+    # 
+    # makeReactiveBinding('plotclick')
+    # 
+    # observeEvent(input$plot_click, {
+    #   print(input$plot_click$x)
+    #   plotclick = input$plot_click })
+    
+    plotclick = reactive(input$plot_click)
+    
     output$scatterPlot = renderPlot(height = 600, res = input$setPPI, {
       
       inputFile = input$csvFile
@@ -144,13 +173,22 @@ shinyServer(function(input, output, session) {
           geom_abline(intercept = bestlineintercept, slope = bestlineslope) +
           eval(parse(text = input$selectTheme)) +
           theme(aspect.ratio = input$aspectRatio, plot.background=element_blank()) +
+          ggtitle(TeX(input$graphTitle)) +
           xlab(TeX(input$xLabel)) +
           ylab(TeX(input$yLabel)) +
           xlim(input$xMin, input$xMax) +
           ylim(input$yMin, input$yMax)
+        
+        if((input$xMax - input$xMin) > input$xMax) {
+          plot1 =
+            plot1 +
+            geom_vline(0)
+        }
       } else {
         return(NULL)
       }
+      
+      
       
       equationLabel = paste("Slope:\n", bestlineslope, "\u00B1", slopeUncertainty, "\nIntercept:\n", bestlineintercept,
                             "\u00B1", interceptUncertainty)
@@ -176,12 +214,29 @@ shinyServer(function(input, output, session) {
       
       #TODO fix equation
       if(input$showEquationFloat == TRUE){
-        xoffset = (input$equationHorizontal/100)*xrange
-        yoffset = (input$equationVertical/100)*yrange
         
-        plot1 = 
-          plot1 +
-          annotate("text", xoffset, yoffset, label = equationLabel)
+        # v = reactiveValues(
+        #   # click = NULL
+        # )
+        # 
+        # click = NULL
+        # 
+        observeEvent(input$plot_click, {
+          print(input$plot_click$x)
+          click = input$plot_click
+          plot1 =
+            plot1 +
+            annotate("text", click$x, click$y, label = equationLabel)
+        })
+        # 
+        # plotclick = reactive(click)
+        
+        # click = ifelse(!is.null(input$plot_click), input$plot_click, )
+        # 
+        # 
+        # plot1 = 
+        #   plot1 +
+        #   annotate("text", input$plot_click$x, input$plot_click$y, label = equationLabel)
       }
       
       # if(is.null(inputFile)) {
