@@ -3,6 +3,7 @@ library(colourpicker)
 library(shinydashboard)
 library(shinyBS)
 library(latex2exp)
+library(DT)
 
 sidebar = dashboardSidebar(
   sidebarMenu(id = "menu",
@@ -31,9 +32,9 @@ body = dashboardBody(
   tabItems(
     tabItem(tabName = "table", {
       fluidRow(
-        box(width = "9", dataTableOutput("dataTable")),
+        box(width = "9", DT::dataTableOutput("dataTable")),
         box(width = "3",
-            fileInput("csvFile", "Upload a CSV file to graph", accept = c('text/csv', 'text/comma-separated-values', '.csv')),
+            fileInput("csvFile", "Upload a CSV data file", accept = c('text/csv', 'text/comma-separated-values', '.csv')),
             checkboxInput('header', 'Header Row', FALSE),
             div(style = "text-align: center", actionButton("graphData", "Graph Data", width = '100%')),
             bsAlert("alert")
