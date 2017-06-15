@@ -8,8 +8,10 @@ library(DT)
 sidebar = dashboardSidebar(
   sidebarMenu(id = "menu",
               menuItem("Data", tabName = "table", icon = icon("table")),
-              menuItem("Graph", tabName = "graph", icon = icon("line-chart"))
-  ),
+              menuItem("Graph", tabName = "graph", icon = icon("line-chart")),
+              hr(),
+              menuItem("Github", icon = icon("github"))
+  )
   # div(style = "height: 75px", fileInput("csvFile", "Upload a CSV file to graph",
   #           accept = c(
   #             'text/csv',
@@ -19,12 +21,12 @@ sidebar = dashboardSidebar(
   # )),
   # checkboxInput('header', 'Header', FALSE),
   
-  bsTooltip(id = 'header', title = 'Select this if the CSV file provided has a header row.', placement = 'right'),
-  numericInput("setNumber", "Number of Generated Sets", min = 100, max = 100000, value = 100),
-  bsTooltip(id = 'setNumber', title = 
-              "With more sets, the accuracy will increase, but the calculations will take longer. The minimum is 100 and the maximum is 100,000.", 
-            placement = 'top'),
-  div(style = "text-align: center", actionButton("calculateFit", "Calculate Fit", width = '85%'))
+  #bsTooltip(id = 'header', title = 'Select this if the CSV file provided has a header row.', placement = 'right'),
+  # numericInput("setNumber", "Number of Generated Sets", min = 100, max = 100000, value = 100),
+  # bsTooltip(id = 'setNumber', title = 
+  #             "With more sets, the accuracy will increase, but the calculations will take longer. The minimum is 100 and the maximum is 100,000.", 
+  #           placement = 'top'),
+  # div(style = "text-align: center", actionButton("calculateFit", "Calculate Fit", width = '85%'))
 )
 
 body = dashboardBody(
@@ -71,6 +73,12 @@ body = dashboardBody(
             numericInput('yMin', 'Y Min', ''),
             numericInput('yMax', 'Y Max', '')
           ),
+          tags$hr(),
+          numericInput("setNumber", "Number of Generated Sets", min = 100, max = 100000, value = 100),
+          bsTooltip(id = 'setNumber', title = 
+                      "With more sets, the accuracy will increase, but the calculations will take longer. The minimum is 100 and the maximum is 100,000.", 
+                    placement = 'top'),
+          div(style = "text-align: center", actionButton("calculateFit", "Calculate Fit", width = '100%')),
           tags$hr(),
           selectInput("aspectRatio", "Aspect Ratio", 
                       c("16:9" = 9/16, "4:3" = 3/4, "1:1" = 1)),
