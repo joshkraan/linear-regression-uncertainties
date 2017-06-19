@@ -1,17 +1,19 @@
 library(shiny)
-library(ggplot2)
-library(ggthemes)
-library(scales)
-library(reshape2)
-library(nlme)
-library(dplyr)
-library(Cairo)
-library(latex2exp)
-library(stringr)
-library(shinyjs)
-options(shiny.usecairo=T)
-library(DT)
 library(tidyverse)
+library(stringr)
+library(magrittr)
+#library(ggplot2)
+library(ggthemes)
+#library(scales)
+library(reshape2)
+#library(nlme)
+#library(dplyr)
+#library(Cairo)
+library(latex2exp)
+library(shinyjs)
+#options(shiny.usecairo=T)
+library(DT)
+
 
 #TODO: Take maximum of found uncertainty vs uncertainty in fit of original data
 
@@ -28,14 +30,16 @@ shinyServer(function(input, output, session) {
       return(data.frame(X = numeric(0), Y = numeric(0)))
     }
     
+    
+    #TODO: Use readr
     data = read.csv(inputFile$datapath, header = input$header)
     
     names(data) = c('XValue', 'XUncertainty', 'YValue', 'YUncertainty')
     
     #TODO: clean up the following
     
-    data = data %>% unite(X, XValue, XUncertainty, sep = "\u00B1", remove = TRUE)
-    data = data %>% unite(Y, YValue, YUncertainty, sep = "\u00B1", remove = TRUE)
+    data %<>% unite(X, XValue, XUncertainty, sep = "\u00B1", remove = TRUE)
+    data %<>% unite(Y, YValue, YUncertainty, sep = "\u00B1", remove = TRUE)
     
     data
   })
@@ -73,10 +77,10 @@ shinyServer(function(input, output, session) {
       #rnorm() can take vectors (term for lists), will cycle through them
       result = rnorm(n*length(mean), mean = mean, sd = sd)
       #Create matrix of results. Each row is a point, and each column is a generated set of points.
-      resultmatrix = matrix(result, , ncol = n, byrow = FALSE)
+      resultmatrix = matrix(data = result, ncol = n, byrow = FALSE)
       #Reorganize the result
-      melteddata = melt(resultmatrix)
-      melteddata[,1] = NULL
+      melteddata = gather(as_data_frame(resultmatrix))
+      #melteddata[,1] = NULL
       return(melteddata)
     }
     
@@ -86,7 +90,8 @@ shinyServer(function(input, output, session) {
     yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
     xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
     
-    mergeddata = cbind(xdata, ydata)
+    mergeddata = bind_cols(xdata, ydata)
+    head(mergeddata)
     mergeddata[,3] = NULL
     names(mergeddata) = c("Index", "xValue", "yValue")
     
@@ -214,29 +219,33 @@ shinyServer(function(input, output, session) {
       
       #TODO fix equation
       if(input$showEquationFloat == TRUE){
+        #x = eventReactive(input$plot_click, input$plot_click$x)
+        #y = eventReactive(input$plot_click, input$plot_click$y)
         
-        # v = reactiveValues(
-        #   # click = NULL
-        # )
-        # 
-        # click = NULL
-        # 
-        observeEvent(input$plot_click, {
-          print(input$plot_click$x)
-          click = input$plot_click
-          plot1 =
-            plot1 +
-            annotate("text", click$x, click$y, label = equationLabel)
-        })
-        # 
-        # plotclick = reactive(click)
         
-        # click = ifelse(!is.null(input$plot_click), input$plot_click, )
-        # 
-        # 
-        # plot1 = 
+        plot1 =
+          plot1 +
+          annotate("text", x = input$plot_click$x, y = input$plot_click$y, label = equationLabel)
+        # plot1 =
         #   plot1 +
-        #   annotate("text", input$plot_click$x, input$plot_click$y, label = equationLabel)
+        #   annotate("text", x = isolate(input$plot_click$x), y = isolate(input$plot_click$y), label = equationLabel)
+         
+        # observeEvent(input$plot_click, {
+        #   x = isolate(input$plot_click$x) 
+        #   y = isolate(input$plot_click$y)
+        # 
+        #   
+        #   plot1 =
+        #     plot1 +
+        #     annotate("text", x = x, y = y, label = equationLabel)
+        # })
+        
+      
+      
+      
+       # plot1 =
+       #    plot1 +
+       #    annotate("text", x = input$plot_click$x, y = input$plot_click$y, label = equationLabel)
       }
       
       # if(is.null(inputFile)) {

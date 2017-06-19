@@ -3,9 +3,9 @@ title: Web_Linreg
 account: joshkraan
 server: shinyapps.io
 appId: 172678
-bundleId: 866301
+bundleId: 868660
 url: https://joshkraan.shinyapps.io/web_linreg/
-when: 1497417753.77845
+when: 1497547106.85987
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .RData|plot.png|Rplot001.png
+ignoredFiles: .RData

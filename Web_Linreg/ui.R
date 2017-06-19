@@ -90,21 +90,17 @@ body = dashboardBody(
           checkboxInput("showSpread", "Show Spread", value = FALSE),
           conditionalPanel(
             condition = "input.showSpread == true",
-            colourInput("spreadColor", "Spread Color", value = "grey")
+            colourpicker::colourInput("spreadColor", "Spread Color", value = "grey")
           ),
           checkboxInput("showGenerated", "Show Generated Data", value = FALSE),
           conditionalPanel(
             condition = "input.showGenerated == true",
-            colourInput("dataColor", "Generated Data Color", value = "red")
+            colourpicker::colourInput("dataColor", "Generated Data Color", value = "red")
           ),
           checkboxInput("showEquationFloat", "Show Equation On Graph", value = FALSE),
           conditionalPanel(
             condition = "input.showEquationFloat == true",
-            sliderInput("equationVertical", "Vertical Distance", min = 0, max = 100, value = 0, post = "%")
-          ),
-          conditionalPanel(
-            condition = "input.showEquationFloat == true",
-            sliderInput("equationHorizontal", "Horizontal Distance", min = 0, max = 100, value = 0, post = "%")
+            helpText("Position the equation by clicking on the graph.")
           ),
           tags$hr(),
           selectInput("downloadResolution", "Download Resolution", 
