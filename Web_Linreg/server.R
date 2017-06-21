@@ -2,16 +2,9 @@ library(shiny)
 library(tidyverse)
 library(stringr)
 library(magrittr)
-#library(ggplot2)
 library(ggthemes)
-#library(scales)
-#library(reshape2)
-#library(nlme)
-#library(dplyr)
-#library(Cairo)
 library(latex2exp)
 library(shinyjs)
-#options(shiny.usecairo=T)
 library(DT)
 
 
@@ -79,9 +72,9 @@ shinyServer(function(input, output, session) {
       #Create matrix of results. Each row is a point, and each column is a generated set of points.
       resultmatrix = matrix(data = result, ncol = n, byrow = FALSE)
       #Reorganize the result
-      melteddata = gather(as_data_frame(resultmatrix))
+      gatheredData = gather(as_data_frame(resultmatrix))
       #melteddata[,1] = NULL
-      return(melteddata)
+      return(gatheredData)
     }
     
     xdata = normaldistribution(samples, data[,1], data[,2])
