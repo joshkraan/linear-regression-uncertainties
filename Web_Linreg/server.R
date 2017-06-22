@@ -47,6 +47,9 @@ shinyServer(function(input, output, session) {
     updateTabItems(session, "menu", "graph")
   })
       
+  #regressionValues = reactiveValues(xdata, ydata, slopevalues, interceptvalues, bestlineslope, bestlineintercept, slopeUncertainty, interceptUncertainty, highslope, highintercept, lowslope, lowintercept)
+  regressionValues = reactiveValues()
+  
   observeEvent(input$calculateFit, {
     
     validate(
@@ -77,13 +80,13 @@ shinyServer(function(input, output, session) {
       return(gatheredData)
     }
     
-    xdata = normaldistribution(samples, data[,1], data[,2])
-    ydata = normaldistribution(samples, data[,3], data[,4])
+    regressionValues$xdata = normaldistribution(samples, data[,1], data[,2])
+    regressionValues$ydata = normaldistribution(samples, data[,3], data[,4])
     
-    yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
-    xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
+    # yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
+    # xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
     
-    mergeddata = bind_cols(xdata, ydata)
+    mergeddata = bind_cols(regressionValues$xdata, regressionValues$ydata)
     head(mergeddata)
     mergeddata[,3] = NULL
     names(mergeddata) = c("Index", "xValue", "yValue")
@@ -97,174 +100,144 @@ shinyServer(function(input, output, session) {
       
       regressions = mergeddata %>% group_by(Index) %>% do(regressionfunction(.))
     })
+    
+    regressionValues$slopevalues = as.numeric(unlist(regressions[,3]))
+    regressionValues$interceptvalues = as.numeric(unlist(regressions[,2]))
+    
+    regressionValues$bestlineslope = mean(regressionValues$slopevalues)
+    regressionValues$bestlineintercept = mean(regressionValues$interceptvalues)
+    
+    regressionValues$slopeUncertainty = 3*sd(regressionValues$slopevalues)
+    regressionValues$interceptUncertainty = 3*sd(regressionValues$interceptvalues)
+    
+    regressionValues$highslope = regressionValues$bestlineslope + regressionValues$slopeUncertainty
+    regressionValues$highintercept = regressionValues$bestlineintercept + regressionValues$interceptUncertainty
+    
+    regressionValues$lowslope = regressionValues$bestlineslope - regressionValues$slopeUncertainty
+    regressionValues$lowintercept = regressionValues$bestlineintercept - regressionValues$interceptUncertainty
+    
+    #plotclick = reactive(input$plot_click)
+    
+  })
   
-    #regressions = coef(lmList(yValue ~ xValue | Index, data = mergeddata, pool = FALSE))
+  output$scatterPlot = renderPlot(height = 600, res = input$setPPI, {
     
-    slopevalues = as.numeric(unlist(regressions[,3]))
-    interceptvalues = as.numeric(unlist(regressions[,2]))
+    inputFile = input$csvFile
     
-    bestlineslope = mean(slopevalues)
-    bestlineintercept = mean(interceptvalues)
+    if (is.null(inputFile)){
+      return(NULL)
+    }
     
-    slopeUncertainty = 3*sd(slopevalues)
-    interceptUncertainty = 3*sd(interceptvalues)
+    data = read.csv(inputFile$datapath, header = input$header)
     
-    highslope = bestlineslope + slopeUncertainty
-    highintercept = bestlineintercept + interceptUncertainty
+    yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
+    xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
     
-    lowslope = bestlineslope - slopeUncertainty
-    lowintercept = bestlineintercept - interceptUncertainty
+    #A plot used to calculte limits that actually isn't shown
+    #The error bars have 0 width/height because they won't be seen but need to be used to calculate limits
+    plotframe = 
+      qplot(data[,1], data[,3]) +
+      geom_errorbar(yerrors, width = 0)  + 
+      geom_errorbarh(xerrors, height = 0)
     
-    # plotclick = NULL
-    # 
-    # makeReactiveBinding('plotclick')
-    # 
-    # observeEvent(input$plot_click, {
-    #   print(input$plot_click$x)
-    #   plotclick = input$plot_click })
+    maxydata = layer_scales(plotframe)$y$range$range[2]
+    maxxdata = layer_scales(plotframe)$x$range$range[2]
+    minydata = layer_scales(plotframe)$y$range$range[1]
+    minxdata = layer_scales(plotframe)$x$range$range[1]
     
-    plotclick = reactive(input$plot_click)
+    xrange = maxxdata - minxdata
+    yrange = maxydata - minydata
     
-    output$scatterPlot = renderPlot(height = 600, res = input$setPPI, {
+    #TODO possibly change constant depending upon aspect ratio so one isn't larger, do this for error bars too
+    ybuffer = 0.05*yrange
+    xbuffer = 0.05*xrange
+    
+    if(is.na(input$xMin)|is.na(input$yMin)|is.na(input$xMax)|is.na(input$yMax)) {
+      updateTextInput(session, "xMin", value = minxdata - xbuffer)
+      updateTextInput(session, "xMax", value = maxxdata + xbuffer)
+      updateTextInput(session, "yMin", value = minydata - ybuffer)
+      updateTextInput(session, "yMax", value = maxydata + ybuffer)
+    }
+    
+    #TODO: Figure out issues with selecting two different CSV in a row
+    
+    if(!is.na(input$xMin) & !is.na(input$yMin) & !is.na(input$xMax) & !is.na(input$yMax)) {
+      plot1 = 
+        qplot(data[,1], data[,3]) + 
+        geom_errorbar(yerrors, width = 0.02*(xrange))  + 
+        geom_errorbarh(xerrors, height = 0.02*(yrange)) + 
+        eval(parse(text = input$selectTheme)) +
+        theme(aspect.ratio = input$aspectRatio, plot.background=element_blank()) +
+        ggtitle(TeX(input$graphTitle)) +
+        xlab(TeX(input$xLabel)) +
+        ylab(TeX(input$yLabel)) +
+        xlim(input$xMin, input$xMax) +
+        ylim(input$yMin, input$yMax)
       
-      inputFile = input$csvFile
-      
-      if (is.null(inputFile)){
-        return(NULL)
-      }
-      
-      data = read.csv(inputFile$datapath, header = input$header)
-      
-      #A plot used to calculte limits that actually isn't shown
-      #The error bars have 0 width/height because they won't be seen but need to be used to calculate limits
-      plotframe = 
-        qplot(data[,1], data[,3]) +
-        geom_errorbar(yerrors, width = 0)  + 
-        geom_errorbarh(xerrors, height = 0)
-      
-      maxydata = layer_scales(plotframe)$y$range$range[2]
-      maxxdata = layer_scales(plotframe)$x$range$range[2]
-      minydata = layer_scales(plotframe)$y$range$range[1]
-      minxdata = layer_scales(plotframe)$x$range$range[1]
-      
-      xrange = maxxdata - minxdata
-      yrange = maxydata - minydata
-      
-      #TODO possibly change constant depending upon aspect ratio so one isn't larger, do this for error bars too
-      ybuffer = 0.05*yrange
-      xbuffer = 0.05*xrange
-      
-      if(is.na(input$xMin)|is.na(input$yMin)|is.na(input$xMax)|is.na(input$yMax)) {
-        updateTextInput(session, "xMin", value = minxdata - xbuffer)
-        updateTextInput(session, "xMax", value = maxxdata + xbuffer)
-        updateTextInput(session, "yMin", value = minydata - ybuffer)
-        updateTextInput(session, "yMax", value = maxydata + ybuffer)
-      }
-      
-      #TODO: Figure out issues with selecting two different CSV in a row
-      
-      if(!is.na(input$xMin) & !is.na(input$yMin) & !is.na(input$xMax) & !is.na(input$yMax)) {
-        plot1 = 
-          qplot(data[,1], data[,3]) + 
-          geom_errorbar(yerrors, width = 0.02*(xrange))  + 
-          geom_errorbarh(xerrors, height = 0.02*(yrange)) + 
-          geom_abline(intercept = bestlineintercept, slope = bestlineslope) +
-          eval(parse(text = input$selectTheme)) +
-          theme(aspect.ratio = input$aspectRatio, plot.background=element_blank()) +
-          ggtitle(TeX(input$graphTitle)) +
-          xlab(TeX(input$xLabel)) +
-          ylab(TeX(input$yLabel)) +
-          xlim(input$xMin, input$xMax) +
-          ylim(input$yMin, input$yMax)
-        
-        if((input$xMax - input$xMin) > input$xMax) {
-          plot1 =
-            plot1 +
-            geom_vline(0)
-        }
-      } else {
-        return(NULL)
-      }
-      
-      
-      
-      equationLabel = paste("Slope:\n", bestlineslope, "\u00B1", slopeUncertainty, "\nIntercept:\n", bestlineintercept,
-                            "\u00B1", interceptUncertainty)
-      
-      if(input$showSpread == TRUE){
-        plot1 = 
-          plot1 + 
-          geom_abline(intercept = interceptvalues, slope = slopevalues, alpha = 1/10, color = input$spreadColor)
-      }
-      
-      if(input$showGenerated == TRUE){
-        plot1 = 
-          plot1 +
-          geom_point(aes(xdata[,2], ydata[,2]), color = input$dataColor, alpha = 1/20)
-      }
-      
-      if(input$showMaxMin == TRUE){
-        plot1 = 
-          plot1 +
-          geom_abline(intercept = highintercept, slope = lowslope, linetype = 3) + 
-          geom_abline(intercept = lowintercept, slope = highslope, linetype = 3)
-      }
-      
-      #TODO fix equation
-      if(input$showEquationFloat == TRUE){
-        #x = eventReactive(input$plot_click, input$plot_click$x)
-        #y = eventReactive(input$plot_click, input$plot_click$y)
-        
-        
+      #TODO figure out the x and y axis lines
+      if((input$xMax - input$xMin) > input$xMax) {
         plot1 =
           plot1 +
-          annotate("text", x = input$plot_click$x, y = input$plot_click$y, label = equationLabel)
-        # plot1 =
-        #   plot1 +
-        #   annotate("text", x = isolate(input$plot_click$x), y = isolate(input$plot_click$y), label = equationLabel)
-         
-        # observeEvent(input$plot_click, {
-        #   x = isolate(input$plot_click$x) 
-        #   y = isolate(input$plot_click$y)
-        # 
-        #   
-        #   plot1 =
-        #     plot1 +
-        #     annotate("text", x = x, y = y, label = equationLabel)
-        # })
-        
-      
-      
-      
-       # plot1 =
-       #    plot1 +
-       #    annotate("text", x = input$plot_click$x, y = input$plot_click$y, label = equationLabel)
+          geom_vline(0)
       }
+    } else {
+      return(NULL)
+    }
+    
+    equationLabel = paste("Slope:\n", regressionValues$bestlineslope, "\u00B1", regressionValues$slopeUncertainty, "\nIntercept:\n", regressionValues$bestlineintercept,
+                          "\u00B1", regressionValues$interceptUncertainty)
+    
+    if(!is.null(regressionValues$bestlineslope)){
+      plot1 = 
+        plot1 +
+        geom_abline(intercept = regressionValues$bestlineintercept, slope = regressionValues$bestlineslope)
+    }
+    
+    if(input$showSpread == TRUE & !is.null(regressionValues$interceptvalues)){
+      plot1 = 
+        plot1 + 
+        geom_abline(intercept = regressionValues$interceptvalues, slope = regressionValues$slopevalues, alpha = 1/10, color = input$spreadColor)
+    }
+    
+    if(input$showGenerated == TRUE & !is.null(regressionValues$xdata)){
+      plot1 = 
+        plot1 +
+        geom_point(aes(regressionValues$xdata[,2], regressionValues$ydata[,2]), color = input$dataColor, alpha = 1/20)
+    }
+    
+    if(input$showMaxMin == TRUE & !is.null(regressionValues$highintercept)){
+      plot1 = 
+        plot1 +
+        geom_abline(intercept = regressionValues$highintercept, slope = regressionValues$lowslope, linetype = 3) + 
+        geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = 3)
+    }
+    
+    #TODO fix equation
+    if(input$showEquationFloat == TRUE){
       
-      # if(is.null(inputFile)) {
-      #   shinyjs::disable("downloadPlot")
-      # } else {
-      #   shinyjs::enable("downloadPlot")
-      # }
+      plot1 =
+        plot1 +
+        annotate("text", x = input$plot_click$x, y = input$plot_click$y, label = equationLabel)
       
-      observe({
-        if(!is.null(inputFile)) {
-          shinyjs::enable("downloadPlot")
-        }
-      })
-      
-      output$downloadPlot = downloadHandler(
-        filename = function() {paste0(str_replace(input$csvFile, ".csv", ""), '.', input$fileFormat)},
-        content = function(file) {
-          ggsave(file, plot = plot1, device = input$fileFormat)
-        }
-      )
-      
-      return(plot1)
-      
+    }
+    
+    observe({
+      if(!is.null(inputFile)) {
+        shinyjs::enable("downloadPlot")
+      }
     })
-
+    
+    output$downloadPlot = downloadHandler(
+      filename = function() {paste0(str_replace(input$csvFile, ".csv", ""), '.', input$fileFormat)},
+      content = function(file) {
+        ggsave(file, plot = plot1, device = input$fileFormat)
+      }
+    )
+    
+    return(plot1)
+    
   })
+  
   
 })
   

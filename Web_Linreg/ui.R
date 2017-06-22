@@ -60,7 +60,7 @@ body = dashboardBody(
                      numericInput('yMax', 'Y Max', '')
                    ),
                    hr(),
-                   numericInput("setNumber", "Number of Generated Sets", min = 100, max = 100000, value = 100),
+                   numericInput("setNumber", "Number of Generated Sets", min = 100, max = 100000, value = 100, width = "100%"),
                    bsTooltip(id = 'setNumber', title =
                                "With more sets, the accuracy will increase, but the calculations will take longer. The minimum is 100 and the maximum is 100,000.",
                              placement = 'top'),
