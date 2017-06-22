@@ -133,6 +133,7 @@ shinyServer(function(input, output, session) {
     yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
     xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
     
+    #TODO: Fix slight error in graph limits
     #A plot used to calculte limits that actually isn't shown
     #The error bars have 0 width/height because they won't be seen but need to be used to calculate limits
     plotframe = 
