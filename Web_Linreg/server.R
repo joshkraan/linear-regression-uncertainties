@@ -160,6 +160,11 @@ shinyServer(function(input, output, session) {
       updateTextInput(session, "yMax", value = maxydata + ybuffer)
     }
     
+    observeEvent(input$setAxisToZero, {
+      updateTextInput(session, "xMin", value = "0")
+      updateTextInput(session, "yMin", value = "0")
+    })
+    
     #TODO: Figure out issues with selecting two different CSV in a row
     
     if(!is.na(input$xMin) & !is.na(input$yMin) & !is.na(input$xMax) & !is.na(input$yMax)) {

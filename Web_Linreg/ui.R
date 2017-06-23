@@ -53,18 +53,20 @@ body = dashboardBody(
                              placement = "left"),
                    splitLayout(
                      numericInput('xMin', 'X Min', ''), #TODO: Fix issues with steps and invalid value error message on mouseover
-                     numericInput('xMax', 'X Max', '')
+                     numericInput('yMin', 'Y Min', '')
                    ),
+                   
                    splitLayout(
-                     numericInput('yMin', 'Y Min', ''),
+                     numericInput('xMax', 'X Max', ''),
                      numericInput('yMax', 'Y Max', '')
                    ),
+                   actionButton("setAxisToZero", "Include Origin", width = "100%"),
                    hr(),
                    numericInput("setNumber", "Number of Generated Sets", min = 100, max = 100000, value = 100, width = "100%"),
                    bsTooltip(id = 'setNumber', title =
                                "With more sets, the accuracy will increase, but the calculations will take longer. The minimum is 100 and the maximum is 100,000.",
                              placement = 'top'),
-                   div(style = "text-align: center", actionButton("calculateFit", "Calculate Fit", width = '100%'))),
+                   actionButton("calculateFit", "Calculate Fit", width = '100%')),
           tabPanel(icon("paint-brush"),
                    selectInput("aspectRatio", "Aspect Ratio", 
                                c("16:9" = 9/16, "4:3" = 3/4, "1:1" = 1)),
