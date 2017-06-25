@@ -168,7 +168,7 @@ shinyServer(function(input, output, session) {
     #TODO: Figure out issues with selecting two different CSV in a row
     
     if(!is.na(input$xMin) & !is.na(input$yMin) & !is.na(input$xMax) & !is.na(input$yMax)) {
-      plot1 = 
+      regressionPlot = 
         qplot(data[,1], data[,3]) + 
         geom_errorbar(yerrors, width = 0.02*(xrange))  + 
         geom_errorbarh(xerrors, height = 0.02*(yrange)) + 
@@ -180,51 +180,42 @@ shinyServer(function(input, output, session) {
         xlim(input$xMin, input$xMax) +
         ylim(input$yMin, input$yMax)
       
-      #TODO figure out the x and y axis lines
-      if((input$xMax - input$xMin) > input$xMax) {
-        plot1 =
-          plot1 +
-          geom_vline(0)
-      }
     } else {
       return(NULL)
     }
+    #TODO: Figure out why there is an else clause above.
     
-    equationLabel = paste("Slope:\n", regressionValues$bestlineslope, "\u00B1", regressionValues$slopeUncertainty, "\nIntercept:\n", regressionValues$bestlineintercept,
-                          "\u00B1", regressionValues$interceptUncertainty)
-    
-    if(!is.null(regressionValues$bestlineslope)){
-      plot1 = 
-        plot1 +
-        geom_abline(intercept = regressionValues$bestlineintercept, slope = regressionValues$bestlineslope)
+    if(input$xMin < 0) {
+      regressionPlot$layers = c(geom_vline(xintercept = 0, alpha = 5/10), regressionPlot$layers)
     }
     
-    if(input$showSpread == TRUE & !is.null(regressionValues$interceptvalues)){
-      plot1 = 
-        plot1 + 
-        geom_abline(intercept = regressionValues$interceptvalues, slope = regressionValues$slopevalues, alpha = 1/10, color = input$spreadColor)
+    if(input$yMin < 0) {
+      regressionPlot$layers = c(geom_hline(yintercept = 0, alpha = 5/10), regressionPlot$layers)
     }
     
     if(input$showGenerated == TRUE & !is.null(regressionValues$xdata)){
-      plot1 = 
-        plot1 +
-        geom_point(aes(regressionValues$xdata[,2], regressionValues$ydata[,2]), color = input$dataColor, alpha = 1/20)
+      regressionPlot$layers = c(geom_point(aes(regressionValues$xdata[,2], regressionValues$ydata[,2]), color = input$dataColor, alpha = 1/20), regressionPlot$layers)
+    }
+    
+    if(input$showSpread == TRUE & !is.null(regressionValues$interceptvalues)){
+      regressionPlot$layers = c(geom_abline(intercept = regressionValues$interceptvalues, slope = regressionValues$slopevalues, alpha = 1/10, color = input$spreadColor), regressionPlot$layers)
+    }
+    
+    if(!is.null(regressionValues$bestlineslope)){
+      regressionPlot$layers = c(regressionPlot$layers, geom_abline(intercept = regressionValues$bestlineintercept, slope = regressionValues$bestlineslope))
     }
     
     if(input$showMaxMin == TRUE & !is.null(regressionValues$highintercept)){
-      plot1 = 
-        plot1 +
-        geom_abline(intercept = regressionValues$highintercept, slope = regressionValues$lowslope, linetype = 3) + 
-        geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = 3)
+      regressionPlot$layers = c(regressionPlot$layers, geom_abline(intercept = regressionValues$highintercept, slope = regressionValues$lowslope, 
+                                                                   linetype = 3), geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = 3))
     }
+    
+    equationLabel = paste("Slope:\n", regressionValues$bestlineslope, "\u00B1", regressionValues$slopeUncertainty,
+                          "\nIntercept:\n", regressionValues$bestlineintercept, "\u00B1", regressionValues$interceptUncertainty)
     
     #TODO fix equation
     if(input$showEquationFloat == TRUE){
-      
-      plot1 =
-        plot1 +
-        annotate("text", x = input$plot_click$x, y = input$plot_click$y, label = equationLabel)
-      
+      regressionPlot$layers = c(regressionPlot$layers, annotate("label", x = input$plot_click$x, y = input$plot_click$y, hjust = 0, label.r = unit(0, "lines"), label = equationLabel))
     }
     
     observe({
@@ -236,11 +227,11 @@ shinyServer(function(input, output, session) {
     output$downloadPlot = downloadHandler(
       filename = function() {paste0(str_replace(input$csvFile, ".csv", ""), '.', input$fileFormat)},
       content = function(file) {
-        ggsave(file, plot = plot1, device = input$fileFormat)
+        ggsave(file, plot = regressionPlot, device = input$fileFormat)
       }
     )
     
-    return(plot1)
+    return(regressionPlot)
     
   })
   
