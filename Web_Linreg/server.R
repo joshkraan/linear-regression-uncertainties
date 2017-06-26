@@ -137,10 +137,19 @@ shinyServer(function(input, output, session) {
       roundedIntercept = format(round(regressionValues$bestlineintercept, -interceptExp), nsmall = -interceptExp)
     }
     
-    regressionValues$equationLabel = paste("Slope:\n", roundedSlope, "\u00B1", roundedSlopeError, 
-                                           "\nIntercept:\n", roundedIntercept, "\u00B1", roundedInterceptError)
+    # regressionValues$equationLabel = paste("Slope:\n", roundedSlope, "\u00B1", roundedSlopeError, 
+    #                                        "\nIntercept:\n", roundedIntercept, "\u00B1", roundedInterceptError)
     
-    
+    regressionValues$equationLabel = paste("Regression Equation:\n", "(", roundedSlope, "\u00B1", roundedSlopeError, ")",
+                                           "+", "(", roundedIntercept, "\u00B1", roundedInterceptError, ")")
+  })
+  
+  
+  #Reactive values for positioning the equation label on plot click
+  clickValues = reactiveValues(click = NULL)
+  
+  observeEvent(input$plot_click, {
+    clickValues$click = input$plot_click
   })
   
   output$scatterPlot = renderPlot(height = 600, res = input$setPPI, {
@@ -233,9 +242,8 @@ shinyServer(function(input, output, session) {
                                                                    linetype = 3), geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = 3))
     }
     
-    #TODO fix equation
     if(input$showEquationFloat == TRUE){
-      regressionPlot$layers = c(regressionPlot$layers, annotate("label", x = input$plot_click$x, y = input$plot_click$y, hjust = 0, label.r = unit(0, "lines"), label = regressionValues$equationLabel))
+      regressionPlot$layers = c(regressionPlot$layers, annotate("label", x = clickValues$click$x, y = clickValues$click$y,  label.r = unit(0, "lines"), label = regressionValues$equationLabel))
     }
     
     observe({
