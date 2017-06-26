@@ -21,6 +21,7 @@ body = dashboardBody(
       fluidRow(
         box(width = "9", DT::dataTableOutput("dataTable")),
         box(width = "3",
+            helpText( a(icon("question"), "File formatting", href = "https://github.com/joshkraan/linear-regression-uncertainties/wiki/Web-Version-Usage", target = "_blank")),
             fileInput("csvFile", "Upload a CSV data file", accept = c('text/csv', 'text/comma-separated-values', '.csv')),
             checkboxInput('header', 'Header Row', FALSE),
             div(style = "text-align: center", actionButton("graphData", "Graph Data", width = '100%')),
