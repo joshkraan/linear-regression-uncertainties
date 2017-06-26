@@ -101,12 +101,15 @@ shinyServer(function(input, output, session) {
       regressions = mergeddata %>% group_by(Index) %>% do(regressionfunction(.))
     })
     
+    #TODO: Check if it would be faster to not constantly reference the reactive values
+    
     regressionValues$slopevalues = as.numeric(unlist(regressions[,3]))
     regressionValues$interceptvalues = as.numeric(unlist(regressions[,2]))
     
     regressionValues$bestlineslope = mean(regressionValues$slopevalues)
     regressionValues$bestlineintercept = mean(regressionValues$interceptvalues)
     
+    #TODO: Figure out number of standard deviations.
     regressionValues$slopeUncertainty = 3*sd(regressionValues$slopevalues)
     regressionValues$interceptUncertainty = 3*sd(regressionValues$interceptvalues)
     
@@ -117,6 +120,26 @@ shinyServer(function(input, output, session) {
     regressionValues$lowintercept = regressionValues$bestlineintercept - regressionValues$interceptUncertainty
     
     #plotclick = reactive(input$plot_click)
+    
+    roundedSlopeError = signif(regressionValues$slopeUncertainty, 1)
+    slopeExp = floor(log10(roundedSlopeError))
+    if(slopeExp > 0) {
+      roundedSlope = round(regressionValues$bestlineslope, -slopeExp)
+    } else {
+      roundedSlope = format(round(regressionValues$bestlineslope, -slopeExp), nsmall = -slopeExp)
+    }
+    
+    roundedInterceptError = signif(regressionValues$interceptUncertainty, 1)
+    interceptExp = floor(log10(roundedInterceptError))
+    if(interceptExp > 0) {
+      roundedIntercept = round(regressionValues$bestlineintercept, -interceptExp)
+    } else {
+      roundedIntercept = format(round(regressionValues$bestlineintercept, -interceptExp), nsmall = -interceptExp)
+    }
+    
+    regressionValues$equationLabel = paste("Slope:\n", roundedSlope, "\u00B1", roundedSlopeError, 
+                                           "\nIntercept:\n", roundedIntercept, "\u00B1", roundedInterceptError)
+    
     
   })
   
@@ -210,12 +233,9 @@ shinyServer(function(input, output, session) {
                                                                    linetype = 3), geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = 3))
     }
     
-    equationLabel = paste("Slope:\n", regressionValues$bestlineslope, "\u00B1", regressionValues$slopeUncertainty,
-                          "\nIntercept:\n", regressionValues$bestlineintercept, "\u00B1", regressionValues$interceptUncertainty)
-    
     #TODO fix equation
     if(input$showEquationFloat == TRUE){
-      regressionPlot$layers = c(regressionPlot$layers, annotate("label", x = input$plot_click$x, y = input$plot_click$y, hjust = 0, label.r = unit(0, "lines"), label = equationLabel))
+      regressionPlot$layers = c(regressionPlot$layers, annotate("label", x = input$plot_click$x, y = input$plot_click$y, hjust = 0, label.r = unit(0, "lines"), label = regressionValues$equationLabel))
     }
     
     observe({
