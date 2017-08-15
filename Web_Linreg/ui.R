@@ -2,6 +2,7 @@ library(shiny)
 library(colourpicker)
 library(shinydashboard)
 library(shinyBS)
+library(shinyjs)
 library(latex2exp)
 library(DT)
 
@@ -9,6 +10,7 @@ sidebar = dashboardSidebar(
   sidebarMenu(id = "menu",
               menuItem("Data", tabName = "table", icon = icon("table")),
               menuItem("Graph", tabName = "graph", icon = icon("line-chart")),
+              # menuItemOutput("graphOutput"),
               hr(),
               menuItem("Github", icon = icon("github"), href = "https://github.com/joshkraan/linear-regression-uncertainties")
   )

@@ -7,17 +7,23 @@ library(latex2exp)
 library(shinyjs)
 library(DT)
 
-
 #TODO: Take maximum of found uncertainty vs uncertainty in fit of original data
 
 shinyServer(function(input, output, session) {
   
+  # Remove the graph tab when a new csv file is uploaded
+  shinyjs::hide(selector = "a[data-value='graph']")
+  observeEvent(input$csvFile, {
+    shinyjs::hide(selector = "a[data-value='graph']")
+  })
+  
   # Disable the download button until the file is uploaded.
   
-  shinyjs::disable("downloadPlot")
   observe({
     if(!is.null(input$csvFile)) {
       shinyjs::enable("downloadPlot")
+    } else {
+      shinyjs::disable("downloadPlot")
     }
   })
   
@@ -47,11 +53,15 @@ shinyServer(function(input, output, session) {
       #TODO: Dismiss this warning after some time.
       createAlert(session, "alert", title = "Error", content = "Please input data before proceeding.", append = FALSE, style = "danger")
       return(NULL)
+    } else {
+      shinyjs::show(selector = "a[data-value='graph']")
+      updateTabItems(session, "menu", "graph")
     }
-    updateTabItems(session, "menu", "graph")
   })
   
   # Calculate the regression once clicked and store the calculated values in a reactiveValues() so they can be accessed by other functions
+  
+  #TODO: Reset values when CSV file has changed.
       
   regressionValues = reactiveValues()
   
@@ -87,9 +97,6 @@ shinyServer(function(input, output, session) {
     regressionValues$xdata = normaldistribution(samples, data[,1], data[,2])
     regressionValues$ydata = normaldistribution(samples, data[,3], data[,4])
     
-    # yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
-    # xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
-    
     mergeddata = bind_cols(regressionValues$xdata, regressionValues$ydata)
     head(mergeddata)
     mergeddata[,3] = NULL
@@ -114,16 +121,16 @@ shinyServer(function(input, output, session) {
     regressionValues$bestlineintercept = mean(regressionValues$interceptvalues)
     
     #TODO: Figure out number of standard deviations.
-    regressionValues$slopeUncertainty = 2*sd(regressionValues$slopevalues)
-    regressionValues$interceptUncertainty = 2*sd(regressionValues$interceptvalues)
+    slopeUncertainty = 2*sd(regressionValues$slopevalues)
+    interceptUncertainty = 2*sd(regressionValues$interceptvalues)
     
-    regressionValues$highslope = regressionValues$bestlineslope + regressionValues$slopeUncertainty
-    regressionValues$highintercept = regressionValues$bestlineintercept + regressionValues$interceptUncertainty
+    regressionValues$highslope = regressionValues$bestlineslope + slopeUncertainty
+    regressionValues$highintercept = regressionValues$bestlineintercept + interceptUncertainty
     
-    regressionValues$lowslope = regressionValues$bestlineslope - regressionValues$slopeUncertainty
-    regressionValues$lowintercept = regressionValues$bestlineintercept - regressionValues$interceptUncertainty
+    regressionValues$lowslope = regressionValues$bestlineslope - slopeUncertainty
+    regressionValues$lowintercept = regressionValues$bestlineintercept - interceptUncertainty
     
-    roundedSlopeError = signif(regressionValues$slopeUncertainty, 1)
+    roundedSlopeError = signif(slopeUncertainty, 1)
     slopeExp = floor(log10(roundedSlopeError))
     
     if(slopeExp > 0) {
@@ -132,7 +139,7 @@ shinyServer(function(input, output, session) {
       roundedSlope = format(round(regressionValues$bestlineslope, -slopeExp), nsmall = -slopeExp)
     }
     
-    roundedInterceptError = signif(regressionValues$interceptUncertainty, 1)
+    roundedInterceptError = signif(interceptUncertainty, 1)
     interceptExp = floor(log10(roundedInterceptError))
     
     if(interceptExp > 0) {
@@ -140,19 +147,6 @@ shinyServer(function(input, output, session) {
     } else {
       roundedIntercept = format(round(regressionValues$bestlineintercept, -interceptExp), nsmall = -interceptExp)
     }
-    
-    # regressionValues$equationLabel = TeX(paste0("Slope: (", roundedSlope, " $\\pm$ ", roundedSlopeError, ")", input$yUnits, "/", input$xUnits,
-    #                                            "Intercept: (", roundedIntercept, " $\\pm$ ", roundedInterceptError, ")", input$yUnits), output = "character")
-    
-    # test12 = expression(alpha %+-% 5)
-    # 
-    # regressionValues$equationLabel = bquote(atop("Slope: " ( .(roundedSlope) %+-% .(roundedSlopeError) ) ~ .(test12), 
-    #                                              "Intercept: " ( .(roundedIntercept) %+-% .(roundedInterceptError) ) ))
-    
-    # test243 = TeX(input$yUnits)
-    # regressionValues$equationLabel = bquote("test" ~ .(test243[[1]]))
-    
-    # regressionValues$equationLabel = as.character(bquote(expression("hope this works" ~ .(test243[[1]]))))[[2]]
     
     regressionValues$slopeLabel = paste0("Slope: (", roundedSlope, "\u00B1", roundedSlopeError, ")")
     regressionValues$interceptLabel = paste0("Intercept: (", roundedIntercept, "\u00B1", roundedInterceptError, ")")
@@ -164,26 +158,6 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$plot_click, {
     clickValues$click = input$plot_click
-    # print("1. ~~~~~~~~~~~~~~~~~~~~")
-    # print(TeX(input$yUnits, output = "expression"))
-    # # print(TeX(input$yUnits, output = "ast"))
-    # print("2. ~~~~~~~~~~~~~~~~~~~~~~~")
-    # print(TeX(input$yUnits, output = "character"))
-    # print(toString(TeX(input$yUnits)))
-    # print(toString(TeX(input$yUnits, output = "character")))
-    # print("label:")
-    # print(TeX(input$yUnits, output = "text"))
-    # print(1)
-    # print(parse(text = deparse(TeX(input$yUnits, output = "character"))))
-    # print(2)
-    # print(TeX(input$yUnits, output = "character"))
-    # print(3)
-    # print(parse(text = TeX(input$yUnits, output = "character")))
-    # print(4)
-    #print(eval(TeX(input$yUnits)))
-    # print(TeX(input$xUnits, output = "character"))
-    # print(parse(text = TeX(input$xUnits, output = "character")))
-    # print(eval(parse(text = TeX(input$xUnits, output = "character"))))
   })
   
   #Ugly hack to make sure PPI stays the same across screen sizes
@@ -191,6 +165,64 @@ shinyServer(function(input, output, session) {
   ppi = function() {
     (session$clientData$output_scatterPlot_width / 1218) * (150 * (input$setPPI / 100))
   }
+  
+  plotValues = reactiveValues()
+  
+  observeEvent(input$graphData, {
+    if(!is.null(input$csvFile)) {
+      
+      # Set all regressionValues() to NULL so old calculations are gone
+      # TODO: Find a more elegant way to clear regressionValues()
+      
+      regressionValues$slopevalues = NULL
+      regressionValues$interceptvalues = NULL
+      regressionValues$bestlineslope = NULL
+      regressionValues$bestlineintercept = NULL
+      regressionValues$highslope = NULL
+      regressionValues$highintercept = NULL
+      regressionValues$lowslope = NULL
+      regressionValues$lowintercept = NULL
+      regressionValues$slopeLabel = NULL
+      regressionValues$interceptLabel = NULL
+      
+      # Calculations for the plot limits
+      
+      data = read.csv(input$csvFile$datapath, header = input$header)
+      
+      yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
+      xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
+      
+      #TODO: Fix this hack
+      #A plot used to calculte limits that actually isn't shown
+      #The error bars have 0 width/height because they won't be seen but need to be used to calculate limits
+      plotframe =
+        qplot(data[,1], data[,3]) +
+        geom_errorbar(yerrors, width = 0)  +
+        geom_errorbarh(xerrors, height = 0)
+      
+      maxYdata = layer_scales(plotframe)$y$range$range[2]
+      maxXdata = layer_scales(plotframe)$x$range$range[2]
+      minYdata = layer_scales(plotframe)$y$range$range[1]
+      minXdata = layer_scales(plotframe)$x$range$range[1]
+      
+      plotValues$xrange = maxXdata - minXdata
+      plotValues$yrange = maxYdata - minYdata
+      
+      #TODO change constant depending upon aspect ratio, do this for error bars too
+      yBuffer = 0.05*plotValues$yrange
+      xBuffer = 0.05*plotValues$xrange
+      
+      updateTextInput(session, "xMin", value = minXdata - xBuffer)
+      updateTextInput(session, "xMax", value = maxXdata + xBuffer)
+      updateTextInput(session, "yMin", value = minYdata - yBuffer)
+      updateTextInput(session, "yMax", value = maxYdata + yBuffer)
+    }
+  })
+  
+  observeEvent(input$setAxisToZero, {
+    updateTextInput(session, "xMin", value = "0")
+    updateTextInput(session, "yMin", value = "0")
+  })
   
   plot1 = reactive({
     
@@ -203,45 +235,13 @@ shinyServer(function(input, output, session) {
     yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
     xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
     
-    #TODO: Fix this hack
-    #A plot used to calculte limits that actually isn't shown
-    #The error bars have 0 width/height because they won't be seen but need to be used to calculate limits
-    plotframe =
-      qplot(data[,1], data[,3]) +
-      geom_errorbar(yerrors, width = 0)  +
-      geom_errorbarh(xerrors, height = 0)
-    
-    maxydata = layer_scales(plotframe)$y$range$range[2]
-    maxxdata = layer_scales(plotframe)$x$range$range[2]
-    minydata = layer_scales(plotframe)$y$range$range[1]
-    minxdata = layer_scales(plotframe)$x$range$range[1]
-    
-    xrange = maxxdata - minxdata
-    yrange = maxydata - minydata
-    
-    #TODO change constant depending upon aspect ratio, do this for error bars too
-    ybuffer = 0.05*yrange
-    xbuffer = 0.05*xrange
-    
-    if(is.na(input$xMin)|is.na(input$yMin)|is.na(input$xMax)|is.na(input$yMax)) {
-      updateTextInput(session, "xMin", value = minxdata - xbuffer)
-      updateTextInput(session, "xMax", value = maxxdata + xbuffer)
-      updateTextInput(session, "yMin", value = minydata - ybuffer)
-      updateTextInput(session, "yMax", value = maxydata + ybuffer)
-    }
-    
-    observeEvent(input$setAxisToZero, {
-      updateTextInput(session, "xMin", value = "0")
-      updateTextInput(session, "yMin", value = "0")
-    })
-    
     #TODO: Figure out issues with selecting two different CSV in a row
     
     if(!is.na(input$xMin) & !is.na(input$yMin) & !is.na(input$xMax) & !is.na(input$yMax)) {
       regressionPlot =
         qplot(data[,1], data[,3]) +
-        geom_errorbar(yerrors, width = 0.02*(xrange))  +
-        geom_errorbarh(xerrors, height = 0.02*(yrange)*(1/as.numeric(input$aspectRatio))) +
+        geom_errorbar(yerrors, width = 0.02*(plotValues$xrange))  +
+        geom_errorbarh(xerrors, height = 0.02*(plotValues$yrange)*(1/as.numeric(input$aspectRatio))) +
         eval(parse(text = input$selectTheme)) +
         theme(aspect.ratio = input$aspectRatio, plot.background=element_blank()) +
         ggtitle(TeX(input$graphTitle)) +
@@ -256,12 +256,10 @@ shinyServer(function(input, output, session) {
           TeX(input$yLabel)
         }) +
         xlim(input$xMin, input$xMax) +
-        ylim(input$yMin, input$yMax) +
-        scale_size_identity()
+        ylim(input$yMin, input$yMax)
     } else {
       return(NULL)
     }
-    #TODO: Figure out why there is an else clause above.
     
     if(input$xMin < 0) {
       regressionPlot$layers = c(geom_vline(xintercept = 0, alpha = 5/10), regressionPlot$layers)
@@ -291,7 +289,6 @@ shinyServer(function(input, output, session) {
                                                                    linetype = 3), geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = 3))
     }
     
-    # TODO: Fix label size
     if(input$showEquationFloat == TRUE & !is.null(regressionValues$slopeLabel)){
       if(input$yUnits != "" || input$xUnits != "") {
         equationLabel = as.character(bquote(expression(atop(.(regressionValues$slopeLabel) ~ .(TeX(input$yUnits)[[1]]) * "/" * .(TeX(input$xUnits)[[1]]), 
@@ -302,9 +299,6 @@ shinyServer(function(input, output, session) {
         parseMath = FALSE
       }
      
-      # regressionPlot$layers = c(regressionPlot$layers, annotate("label", x = clickValues$click$x, y = clickValues$click$y,  
-      #                                                           label.r = unit(0, "lines"), label = equationLabel, parse = parseMath, hjust = "left", size = 5 * (input$setPPI / 100)))
-      
       regressionPlot$layers = c(regressionPlot$layers, geom_label(aes(x = clickValues$click$x, y = clickValues$click$y), 
                                                                 label.r = unit(0, "lines"), label.padding = unit(0.30, "lines"), label = equationLabel, parse = parseMath, hjust = "left", 
                                                                 size = (input$setLabelScale / 100) * 5 * (1/(sqrt(ppi() / 100)))))
@@ -313,8 +307,6 @@ shinyServer(function(input, output, session) {
     regressionPlot
     
   })
-  
-  
   
   observeEvent({
     input$setPPI
