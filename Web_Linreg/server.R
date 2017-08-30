@@ -29,6 +29,8 @@ shinyServer(function(input, output, session) {
   
   # Read the uploaded data file and produce a visual data table.
   
+  columnNames = reactiveValues()
+  
   output$dataTable = DT::renderDataTable(options = list(columnDefs = list(list(className = 'dt-left', targets = "_all"))), {
     
     if (is.null(input$csvFile)) {
@@ -38,10 +40,19 @@ shinyServer(function(input, output, session) {
     #TODO: Use readr
     data = read.csv(input$csvFile$datapath, header = input$header)
     
+    if(input$header == TRUE) {
+      columnNames$x = colnames(data)[1]
+      columnNames$y = colnames(data)[3]
+    }
+    
     names(data) = c('XValue', 'XUncertainty', 'YValue', 'YUncertainty')
     
-    data %<>% unite(X, XValue, XUncertainty, sep = "\u00B1", remove = TRUE)
-    data %<>% unite(Y, YValue, YUncertainty, sep = "\u00B1", remove = TRUE)
+    data %<>% tidyr::unite(X, XValue, XUncertainty, sep = "\u00B1", remove = TRUE)
+    data %<>% tidyr::unite(Y, YValue, YUncertainty, sep = "\u00B1", remove = TRUE)
+    
+    if(input$header == TRUE) {
+      names(data) = c(columnNames$x, columnNames$y)
+    }
     
     data
   })
@@ -56,6 +67,13 @@ shinyServer(function(input, output, session) {
     } else {
       shinyjs::show(selector = "a[data-value='graph']")
       updateTabItems(session, "menu", "graph")
+      if(input$header == TRUE) {
+        updateTextInput(session, "xLabel", value = columnNames$x)
+        updateTextInput(session, "yLabel", value = columnNames$y)
+      } else {
+        updateTextInput(session, "xLabel", value = "X")
+        updateTextInput(session, "yLabel", value = "Y")
+      }
     }
   })
   
@@ -69,7 +87,7 @@ shinyServer(function(input, output, session) {
     
     #TODO
     validate(
-      need(input$setNumber >= 100 && input$setNumber <= 100000, "Please select a number from 100 to 100,000")
+      need(input$setNumber >= 100 && input$setNumber <= 1000, "Please select a number from 100 to 1,000")
     )
     
     samples = input$setNumber
@@ -85,7 +103,7 @@ shinyServer(function(input, output, session) {
       # Two or 3 standard deviations?
       # TODO
       sd = uncertainty/2
-      #rnorm() can take vectors (term for lists), will cycle through them
+      #rnorm() can take vectors, will cycle through them
       result = rnorm(n*length(mean), mean = mean, sd = sd)
       #Create matrix of results. Each row is a point, and each column is a generated set of points.
       resultmatrix = matrix(data = result, ncol = n, byrow = FALSE)
