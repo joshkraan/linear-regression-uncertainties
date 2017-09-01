@@ -78,8 +78,6 @@ shinyServer(function(input, output, session) {
   })
   
   # Calculate the regression once clicked and store the calculated values in a reactiveValues() so they can be accessed by other functions
-  
-  #TODO: Reset values when CSV file has changed.
       
   regressionValues = reactiveValues()
   
@@ -111,10 +109,10 @@ shinyServer(function(input, output, session) {
       return(gatheredData)
     }
     
-    regressionValues$xdata = normaldistribution(samples, data[,1], data[,2])
-    regressionValues$ydata = normaldistribution(samples, data[,3], data[,4])
+    xdata = normaldistribution(samples, data[,1], data[,2])
+    ydata = normaldistribution(samples, data[,3], data[,4])
     
-    mergeddata = bind_cols(regressionValues$xdata, regressionValues$ydata)
+    mergeddata = bind_cols(xdata, ydata)
     head(mergeddata)
     mergeddata[,3] = NULL
     names(mergeddata) = c("Index", "xValue", "yValue")
@@ -129,17 +127,33 @@ shinyServer(function(input, output, session) {
       regressions = mergeddata %>% group_by(Index) %>% do(regressionfunction(.))
     })
     
-    #TODO: Check if it would be faster to not constantly reference the reactive values
+    # Here the calculated value is compared with that of a standard linear regression and the max is used
     
-    regressionValues$slopevalues = as.numeric(unlist(regressions[,3]))
-    regressionValues$interceptvalues = as.numeric(unlist(regressions[,2]))
+    linearFit = lm(data[,3] ~ data[,1])
     
-    regressionValues$bestlineslope = mean(regressionValues$slopevalues)
-    regressionValues$bestlineintercept = mean(regressionValues$interceptvalues)
-    
-    #TODO: Figure out number of standard deviations.
-    slopeUncertainty = 2*sd(regressionValues$slopevalues)
-    interceptUncertainty = 2*sd(regressionValues$interceptvalues)
+    if(2*summary(linearFit)$coefficients[2,2] > 2*sd(as.numeric(unlist(regressions[,3])))) {
+      shinyjs::hide("showSpread")
+      
+      regressionValues$bestlineslope = summary(linearFit)$coefficients[2,1]
+      regressionValues$bestlineintercept = summary(linearFit)$coefficients[1,1]
+      
+      slopeUncertainty = 2*summary(linearFit)$coefficients[2,2]
+      interceptUncertainty =  2*summary(linearFit)$coefficients[1,2]
+    } else {
+      shinyjs::show("showSpread")
+      
+      regressionValues$xdata = xdata
+      regressionValues$ydata = ydata
+      
+      regressionValues$slopevalues = as.numeric(unlist(regressions[,3]))
+      regressionValues$interceptvalues = as.numeric(unlist(regressions[,2]))
+      
+      regressionValues$bestlineslope = mean(regressionValues$slopevalues)
+      regressionValues$bestlineintercept = mean(regressionValues$interceptvalues)
+      
+      slopeUncertainty = 2*sd(regressionValues$slopevalues)
+      interceptUncertainty = 2*sd(regressionValues$interceptvalues)
+    }
     
     regressionValues$highslope = regressionValues$bestlineslope + slopeUncertainty
     regressionValues$highintercept = regressionValues$bestlineintercept + interceptUncertainty
@@ -193,6 +207,8 @@ shinyServer(function(input, output, session) {
       # Set all regressionValues() to NULL so old calculations are gone
       # TODO: Find a more elegant way to clear regressionValues()
       
+      regressionValues$xdata = NULL
+      regressionValues$ydata = NULL
       regressionValues$slopevalues = NULL
       regressionValues$interceptvalues = NULL
       regressionValues$bestlineslope = NULL
@@ -203,6 +219,7 @@ shinyServer(function(input, output, session) {
       regressionValues$lowintercept = NULL
       regressionValues$slopeLabel = NULL
       regressionValues$interceptLabel = NULL
+      
       
       # Calculations for the plot limits
       
