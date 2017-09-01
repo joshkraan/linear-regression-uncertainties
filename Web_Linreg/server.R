@@ -133,6 +133,7 @@ shinyServer(function(input, output, session) {
     
     if(2*summary(linearFit)$coefficients[2,2] > 2*sd(as.numeric(unlist(regressions[,3])))) {
       shinyjs::hide("showSpread")
+      shinyjs::hide("showGenerated")
       
       regressionValues$bestlineslope = summary(linearFit)$coefficients[2,1]
       regressionValues$bestlineintercept = summary(linearFit)$coefficients[1,1]
@@ -141,6 +142,7 @@ shinyServer(function(input, output, session) {
       interceptUncertainty =  2*summary(linearFit)$coefficients[1,2]
     } else {
       shinyjs::show("showSpread")
+      shinyjs::show("showGenerated")
       
       regressionValues$xdata = xdata
       regressionValues$ydata = ydata
