@@ -12,7 +12,7 @@ sidebar = dashboardSidebar(
               menuItem("Graph", tabName = "graph", icon = icon("line-chart")),
               # menuItemOutput("graphOutput"),
               hr(),
-              menuItem("Github", icon = icon("github"), href = "https://github.com/joshkraan/linear-regression-uncertainties")
+              menuItem("Source", icon = icon("github"), href = "https://github.com/joshkraan/linear-regression-uncertainties")
   )
 )
 
@@ -57,7 +57,8 @@ body = dashboardBody(
                    bsTooltip(id = 'setNumber', title =
                                "With more sets, the accuracy will increase, but the calculations will take longer. The minimum is 100 and the maximum is 1,000.",
                              placement = 'top'),
-                   actionButton("calculateFit", "Calculate Fit", width = '100%')),
+                   actionButton("calculateFit", "Calculate Fit", width = '100%'),
+                   verbatimTextOutput("fitResult")),
           tabPanel(icon("paint-brush"),
                    selectInput("aspectRatio", "Aspect Ratio", 
                                c("16:9" = 9/16, "4:3" = 3/4, "1:1" = 1), width = "100%"),

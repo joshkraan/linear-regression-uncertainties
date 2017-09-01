@@ -92,16 +92,15 @@ shinyServer(function(input, output, session) {
     
     samples = input$setNumber
     
-    if (is.null(input$csvFile))
+    if(is.null(input$csvFile)) {
       return(NULL)
-    
+    }
+        
     #Read uploaded data file. Uses header if option is selected in UI.
     data = read.csv(input$csvFile$datapath, header = input$header)
     
     normaldistribution = function(n, mean, uncertainty) {
       #Standard Deviation can be approximated to range/4 with 95% accuracy, range = 2*uncertainty, so sd equals approximately unc/2
-      # Two or 3 standard deviations?
-      # TODO
       sd = uncertainty/2
       #rnorm() can take vectors, will cycle through them
       result = rnorm(n*length(mean), mean = mean, sd = sd)
@@ -168,6 +167,8 @@ shinyServer(function(input, output, session) {
     
     regressionValues$slopeLabel = paste0("Slope: (", roundedSlope, "\u00B1", roundedSlopeError, ")")
     regressionValues$interceptLabel = paste0("Intercept: (", roundedIntercept, "\u00B1", roundedInterceptError, ")")
+    
+    output$fitResult = renderText(paste0(regressionValues$slopeLabel, "\n", regressionValues$interceptLabel))
   })
   
   
