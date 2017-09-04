@@ -17,6 +17,7 @@ sidebar = dashboardSidebar(
 )
 
 body = dashboardBody(
+  tags$head(tags$link(rel = "shortcut icon", href = "www/favicon.ico")),
   shinyjs::useShinyjs(),
   tabItems(
     tabItem(tabName = "table", {
