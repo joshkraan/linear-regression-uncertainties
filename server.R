@@ -132,6 +132,14 @@ shinyServer(function(input, output, session) {
     linearFit = lm(data[,3] ~ data[,1])
     
     if(summary(linearFit)$coefficients[2,2] > 2*sd(as.numeric(unlist(regressions[,3])))) {
+      showNotification("Uncertainty in normal linear regression larger than calculated uncertainty.
+                       This may mean that the data is non-linear or uncertainties were underestimated.
+                       As generated results aren't used they have been removed from the appearance panel.", 
+                       duration = 20, type = "warning")
+      
+      updateCheckboxInput(session, "showSpread", value = FALSE)
+      updateCheckboxInput(session, "showGenerated", value = FALSE)
+      
       shinyjs::hide("showSpread")
       shinyjs::hide("showGenerated")
       
