@@ -345,9 +345,10 @@ shinyServer(function(input, output, session) {
         parseMath = FALSE
       }
      
+      #TODO Fix issues with label not scaling properly when browser window size changes
       regressionPlot$layers = c(regressionPlot$layers, geom_label(aes(x = clickValues$click$x, y = clickValues$click$y), 
                                                                 label.r = unit(0, "lines"), label.padding = unit(0.30, "lines"), label = equationLabel, parse = parseMath, hjust = "left", 
-                                                                size = (input$setLabelScale / 100) * 5 * (1/(sqrt(ppi() / 100)))))
+                                                                size = (input$setLabelScale / 100) * 50 * (1/(sqrt(150 * (input$setPPI / 100))))))
     }
     
     regressionPlot
@@ -367,7 +368,7 @@ shinyServer(function(input, output, session) {
   output$downloadPlot = downloadHandler(
     filename = function() {paste0(str_replace(input$csvFile, ".csv", ""), '.', input$fileFormat)},
     content = function(file) {
-      width = 1218 / input$setPPI
+      width = 1218 / (150 * (input$setPPI/100))
       switch(input$fileFormat, 
              "pdf" = {
                pdf(file, width = width, height = width * as.numeric(input$aspectRatio))
