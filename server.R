@@ -153,8 +153,8 @@ shinyServer(function(input, output, session) {
       regressionValues$bestlineslope = mean(regressionValues$slopevalues)
       regressionValues$bestlineintercept = mean(regressionValues$interceptvalues)
       
-      slopeUncertainty = 10*sd(regressionValues$slopevalues)
-      interceptUncertainty = 10*sd(regressionValues$interceptvalues)
+      slopeUncertainty = 2*sd(regressionValues$slopevalues)
+      interceptUncertainty = 2*sd(regressionValues$interceptvalues)
     }
     
     regressionValues$highslope = regressionValues$bestlineslope + slopeUncertainty
