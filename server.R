@@ -153,8 +153,8 @@ shinyServer(function(input, output, session) {
       regressionValues$bestlineslope = mean(regressionValues$slopevalues)
       regressionValues$bestlineintercept = mean(regressionValues$interceptvalues)
       
-      slopeUncertainty = 2*sd(regressionValues$slopevalues)
-      interceptUncertainty = 2*sd(regressionValues$interceptvalues)
+      slopeUncertainty = 10*sd(regressionValues$slopevalues)
+      interceptUncertainty = 10*sd(regressionValues$interceptvalues)
     }
     
     regressionValues$highslope = regressionValues$bestlineslope + slopeUncertainty
@@ -324,7 +324,7 @@ shinyServer(function(input, output, session) {
     
     if(input$showMaxMin == TRUE & !is.null(regressionValues$highintercept)){
       regressionPlot$layers = c(regressionPlot$layers, geom_abline(intercept = regressionValues$highintercept, slope = regressionValues$lowslope, 
-                                                                   linetype = 3), geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = 3))
+                                                                   linetype = "longdash", size = 0.3), geom_abline(intercept = regressionValues$lowintercept, slope = regressionValues$highslope, linetype = "longdash", size = 0.3))
     }
     
     if(input$showEquationFloat == TRUE & !is.null(regressionValues$slopeLabel)){
