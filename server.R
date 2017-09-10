@@ -45,7 +45,7 @@ shinyServer(function(input, output, session) {
     }
     
     #TODO: Use readr
-    data = read.csv(input$csvFile$datapath, header = input$header)
+    data = read.csv(input$csvFile$datapath, header = input$header, check.names = FALSE)
     
     if(input$header == TRUE) {
       columnNames$x = colnames(data)[1]
