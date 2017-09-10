@@ -9,22 +9,20 @@ library(tidyverse)
 # Give data as csv file with columns: x, xuncertainty, y, yuncertainty
 # If you have a header on your file set header = TRUE below.
 
-data = read.csv("testvalues.csv", header = FALSE)
+data = read.csv("testvalues4.csv", header = FALSE)
 
 #TODO Fix this to use tidyverse conventions
 normaldistribution = function(n, mean, uncertainty) {
   #Assuming range contains 95% of data, sd = range/4
-  #Assuming range contains 99.7% of data, sd = range/6
   #Range = 2*uncertainty
-  sd = uncertainty/3
+  sd = uncertainty/2
   #rnorm() can take vectors (term for lists), will cycle through them
   result = rnorm(n*length(mean), mean = mean, sd = sd)
   #Create matrix of results. Each row is a point, and each column is a generated set of points.
-  resultmatrix = matrix(result, , ncol = n, byrow = FALSE)
+  resultmatrix = matrix(data = result, ncol = n, byrow = FALSE)
   #Reorganize the result
-  melteddata = melt(resultmatrix)
-  melteddata[,1] = NULL
-  return(melteddata)
+  gatheredData = gather(as_data_frame(resultmatrix))
+  return(gatheredData)
 }
 
 #Change the n value for these for more accuracy. Values of 10000 or higher seem to work well, but take some time.
@@ -39,9 +37,7 @@ mergeddata = cbind(xdata, ydata)
 mergeddata[,3] = NULL
 names(mergeddata) = c("Index", "xValue", "yValue")
 
-
 regressions = mergeddata %>% group_by(Index) %>% do(data.frame(as.list(coef(lsfit(matrix(.$xValue), .$yValue)))))
-#regressions = coef(lmList(yValue ~ xValue | Index, data = mergeddata, pool = FALSE))
 
 slopevalues = as.numeric(unlist(regressions[,3]))
 interceptvalues = as.numeric(unlist(regressions[,2]))
@@ -49,9 +45,8 @@ interceptvalues = as.numeric(unlist(regressions[,2]))
 bestlineslope = mean(slopevalues)
 bestlineintercept = mean(interceptvalues)
 
-#Change to 2 or 3 sd depending on accuracy desired.
-slopeUncertainty = 3*sd(slopevalues)
-interceptUncertainty = 3*sd(interceptvalues)
+slopeUncertainty = 2*sd(slopevalues)
+interceptUncertainty = 2*sd(interceptvalues)
 
 highslope = bestlineslope + slopeUncertainty
 highintercept = bestlineintercept + interceptUncertainty
@@ -77,9 +72,3 @@ print(plot1)
 
 cat("\nSlope: ", bestlineslope, "Slope Uncertainty: ", slopeUncertainty, 
     "\nIntercept: ", bestlineintercept, "Intercept Uncertainty: ", interceptUncertainty)
-
-#Some interesting density plots:
-#plot(density(regresssions[,2])
-#plot(density(regresssions[,1])
-#plot(density(mergeddata[,2]))
-#plot(density(mergeddata[,3]))

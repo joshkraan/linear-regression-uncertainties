@@ -16,6 +16,13 @@ shinyServer(function(input, output, session) {
   observeEvent(input$csvFile, {
     shinyjs::hide(selector = "a[data-value='graph']")
   })
+
+  # Check if data file is uploaded for Data Table help text.
+  
+  output$dataFile = reactive({
+    return(!is.null(input$csvFile))
+  })
+  outputOptions(output, "dataFile", suspendWhenHidden = FALSE)
   
   # Disable the download button until the file is uploaded.
   
@@ -253,9 +260,8 @@ shinyServer(function(input, output, session) {
       
       plotValues$xrange = maxXdata - minXdata
       plotValues$yrange = maxYdata - minYdata
-      
-      #TODO change constant depending upon aspect ratio, do this for error bars too
-      yBuffer = 0.05*plotValues$yrange
+
+      yBuffer = 0.05*plotValues$yrange*(1/as.numeric(input$aspectRatio))
       xBuffer = 0.05*plotValues$xrange
       
       updateTextInput(session, "xMin", value = minXdata - xBuffer)
@@ -301,8 +307,10 @@ shinyServer(function(input, output, session) {
         } else {
           TeX(input$yLabel)
         }) +
-        xlim(input$xMin, input$xMax) +
-        ylim(input$yMin, input$yMax)
+        scale_x_continuous(limits = c(input$xMin, input$xMax), expand = c(0,0)) +
+        scale_y_continuous(limits = c(input$yMin, input$yMax), expand = c(0,0))
+        # xlim(input$xMin, input$xMax) +
+        # ylim(input$yMin, input$yMax)
     } else {
       return(NULL)
     }
@@ -344,9 +352,23 @@ shinyServer(function(input, output, session) {
         equationLabel = paste0(regressionValues$slopeLabel, "\n", regressionValues$interceptLabel)
         parseMath = FALSE
       }
+      
+      if(input$advancedSettings %% 2 == 1){
+        xPosition = clickValues$click$x
+        yPosition = clickValues$click$y
+      } else {
+        xRange = input$xMax - input$xMin
+        xPosition = input$xMin + 0.1*xRange*(9/16)
+        yRange = input$yMax - input$yMin
+        if(regressionValues$bestlineslope > 0){
+          yPosition = input$yMin + 0.9*yRange
+        } else {
+          yPosition = input$yMin + 0.1*yRange
+        }
+      }
      
       #TODO Fix issues with label not scaling properly when browser window size changes
-      regressionPlot$layers = c(regressionPlot$layers, geom_label(aes(x = clickValues$click$x, y = clickValues$click$y), 
+      regressionPlot$layers = c(regressionPlot$layers, geom_label(aes(x = xPosition, y = yPosition), 
                                                                 label.r = unit(0, "lines"), label.padding = unit(0.30, "lines"), label = equationLabel, parse = parseMath, hjust = "left", 
                                                                 size = (input$setLabelScale / 100) * 50 * (1/(sqrt(150 * (input$setPPI / 100))))))
     }
@@ -375,7 +397,7 @@ shinyServer(function(input, output, session) {
              },
              "png" = {
                png(file, width = as.numeric(input$downloadResolution), height = as.numeric(input$downloadResolution) * as.numeric(input$aspectRatio), 
-                   res = (as.numeric(input$downloadResolution) / 1218) * as.numeric(input$setPPI))
+                   res = (as.numeric(input$downloadResolution) / 1218) * (150 * (as.numeric(input$setPPI)/100)))
              }, 
              "svg" = {
                svg(file, width = width, height = width * as.numeric(input$aspectRatio))
