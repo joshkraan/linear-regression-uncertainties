@@ -199,9 +199,18 @@ shinyServer(function(input, output, session) {
     regressionValues$slopeLabel = paste0("Slope: (", roundedSlope, "\u00B1", roundedSlopeError, ")")
     regressionValues$interceptLabel = paste0("Intercept: (", roundedIntercept, "\u00B1", roundedInterceptError, ")")
     
-    output$fitResult = renderText(paste0(regressionValues$slopeLabel, "\n", regressionValues$interceptLabel))
+    regressionValues$verbatimLabel = renderText(paste0(regressionValues$slopeLabel, "\n", regressionValues$interceptLabel))
+    
+    #output$fitResult = renderText(paste0(regressionValues$slopeLabel, "\n", regressionValues$interceptLabel))
   })
   
+  observe({
+    if(!is.null(regressionValues$verbatimLabel)) {
+      output$fitResult = regressionValues$verbatimLabel
+    } else {
+      output$fitResult = renderText(paste0("Slope:", "\n", "Intercept:"))
+    }
+  })
   
   #Reactive values for positioning the equation label on plot click
   clickValues = reactiveValues(click = NULL)
