@@ -30,7 +30,7 @@ body = dashboardBody(
               condition = "output.dataFile == false",
               "Upload a CSV data file using the ", tags$b("Data File"), "box.", tags$br(),
               "If you have not used this application before",
-              tags$a("click here", href = "https://github.com/joshkraan/linear-regression-uncertainties/wiki"),
+              tags$a("click here", href = "https://github.com/joshkraan/linear-regression-uncertainties/wiki#basic-usage"),
               "for a tutorial."
             ),
             conditionalPanel(
@@ -41,7 +41,7 @@ body = dashboardBody(
             title = "Data File",
             solidHeader = TRUE,
             status = "primary",
-            helpText( a(icon("question"), "Click here for help with file formatting.", href = "https://github.com/joshkraan/linear-regression-uncertainties/wiki/Web-Version-Usage#file-formatting", target = "_blank")),
+            helpText( a(icon("question"), "Click here for help with file formatting.", href = "https://github.com/joshkraan/linear-regression-uncertainties/wiki#file-formatting", target = "_blank")),
             fileInput("csvFile", "Upload a CSV data file", accept = c('text/csv', 'text/comma-separated-values', '.csv')),
             checkboxInput('header', 'Header Row', FALSE),
             div(style = "text-align: center", actionButton("graphData", "Graph Data", width = '100%')),
@@ -58,7 +58,7 @@ body = dashboardBody(
             textInput("xUnits", "X Axis Units*", value = NULL, width = "100%"),
             textInput("yLabel", "Y Axis Label*", value = "Y", width = "100%"),
             textInput("yUnits", "Y Axis Units*", value = NULL, width = "100%"),
-            helpText( a("*Click here for help with symbol formatting.", href = "https://github.com/joshkraan/linear-regression-uncertainties/wiki/Web-Version-Usage#latex2exp-usage", target = "_blank")),
+            helpText( a("*Click here for help with symbol usage.", href = "https://github.com/joshkraan/linear-regression-uncertainties/wiki#symbol-usage", target = "_blank")),
             hr(),
             conditionalPanel(
               condition = "input.advancedSettings%2 == 1",
