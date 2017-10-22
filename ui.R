@@ -63,7 +63,7 @@ body = dashboardBody(
             conditionalPanel(
               condition = "input.advancedSettings%2 == 1",
               splitLayout(
-                numericInput('xMin', 'X Min', ''), #TODO: Fix issues with steps and invalid value error message on mouseover
+                numericInput('xMin', 'X Min', ''),
                 numericInput('yMin', 'Y Min', '')
               ),
               splitLayout(

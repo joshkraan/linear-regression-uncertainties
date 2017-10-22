@@ -7,14 +7,15 @@ library(latex2exp)
 library(shinyjs)
 library(DT)
 
-#TODO: Take maximum of found uncertainty vs uncertainty in fit of original data
-
 shinyServer(function(input, output, session) {
+  
+  dataQuality = reactiveValues()
   
   # Remove the graph tab when a new csv file is uploaded
   shinyjs::hide(selector = "a[data-value='graph']")
   observeEvent(input$csvFile, {
     shinyjs::hide(selector = "a[data-value='graph']")
+    dataQuality$good = "Yes"
   })
 
   # Check if data file is uploaded for Data Table help text.
@@ -43,9 +44,17 @@ shinyServer(function(input, output, session) {
     if (is.null(input$csvFile)) {
       return(data.frame(X = numeric(0), Y = numeric(0)))
     }
-    
-    #TODO: Use readr
+
     data = read.csv(input$csvFile$datapath, header = input$header, check.names = FALSE)
+    
+    # Validate that the CSV file is properly formatted.
+    if (ncol(data) != 4) {
+      shinyjs::alert("The file uploaded was not properly formatted, please see the tutorial for help.")
+      shinyjs::reset("csvFile")
+      #TODO: Fix issues with this working only once.
+      shinyjs::runjs("Shiny.onInputChange('csvFile', null)")
+      return(data.frame(X = numeric(0), Y = numeric(0)))
+    }
     
     if(input$header == TRUE) {
       columnNames$x = colnames(data)[1]
@@ -68,8 +77,7 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$graphData, {
     if(is.null(input$csvFile)){
-      #TODO: Dismiss this warning after some time.
-      createAlert(session, "alert", title = "Error", content = "Please input data before proceeding.", append = FALSE, style = "danger")
+      shinyjs::alert("Please input data before proceeding.")
       return(NULL)
     } else {
       shinyjs::show(selector = "a[data-value='graph']")
@@ -90,7 +98,6 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$calculateFit, {
     
-    #TODO
     validate(
       need(input$setNumber >= 100 && input$setNumber <= 1000, "Please select a number from 100 to 1,000")
     )
@@ -200,8 +207,6 @@ shinyServer(function(input, output, session) {
     regressionValues$interceptLabel = paste0("Intercept: (", roundedIntercept, "\u00B1", roundedInterceptError, ")")
     
     regressionValues$verbatimLabel = renderText(paste0(regressionValues$slopeLabel, "\n", regressionValues$interceptLabel))
-    
-    #output$fitResult = renderText(paste0(regressionValues$slopeLabel, "\n", regressionValues$interceptLabel))
   })
   
   observe({
@@ -231,7 +236,7 @@ shinyServer(function(input, output, session) {
     if(!is.null(input$csvFile)) {
       
       # Set all regressionValues() to NULL so old calculations are gone
-      # TODO: Find a more elegant way to clear regressionValues()
+      # TODO: Find a more elegant way to clear regressionValues() in the future
       
       regressionValues$xdata = NULL
       regressionValues$ydata = NULL
@@ -254,7 +259,7 @@ shinyServer(function(input, output, session) {
       yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
       xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
       
-      #TODO: Fix this hack
+      #TODO: Possibly fix this hack in the future
       #A plot used to calculte limits that actually isn't shown
       #The error bars have 0 width/height because they won't be seen but need to be used to calculate limits
       plotframe =
@@ -295,8 +300,6 @@ shinyServer(function(input, output, session) {
     
     yerrors = aes(ymax = data[,3] + data[,4], ymin = data[,3] - data[,4])
     xerrors = aes(xmax = data[,1] + data[,2], xmin = data[,1] - data[,2])
-    
-    #TODO: Figure out issues with selecting two different CSV in a row
     
     if(!is.na(input$xMin) & !is.na(input$yMin) & !is.na(input$xMax) & !is.na(input$yMax)) {
       regressionPlot =
@@ -375,8 +378,7 @@ shinyServer(function(input, output, session) {
           yPosition = input$yMin + 0.1*yRange
         }
       }
-     
-      #TODO Fix issues with label not scaling properly when browser window size changes
+      
       regressionPlot$layers = c(regressionPlot$layers, geom_label(aes(x = xPosition, y = yPosition), 
                                                                 label.r = unit(0, "lines"), label.padding = unit(0.30, "lines"), label = equationLabel, parse = parseMath, hjust = "left", 
                                                                 size = (input$setLabelScale / 100) * 50 * (1/(sqrt(150 * (input$setPPI / 100))))))
